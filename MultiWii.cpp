@@ -1232,10 +1232,10 @@ void loop () {
 #if PID_CONTROLLER == 1 // evolved oldschool
 
   //ADJUSTEMENT COEFF
-  //int K = map(rcData[AUX3],1000,2000,0,256);
-  //debug[0]=K;
+  int K = map(rcData[AUX3],1000,2000,0,256);
+  debug[0]=K;
 
-  if ( f.HORIZON_MODE ) prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
+  prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
 
   // PITCH & ROLL
   for(axis=0;axis<2;axis++) {
@@ -1271,9 +1271,9 @@ void loop () {
     delta2[axis]   = delta1[axis];
     delta1[axis]   = delta;
  
-    DTerm = mul(DTerm,dynD8[axis])>>5;        // 32 bits is needed for calculation
+    DTerm = mul(DTerm,dynD8[axis])>>5;  // 32 bits is needed for calculation
 
-    axisPID[axis] =  PTerm + ITerm - DTerm;
+    axisPID[axis] =  mul(PTerm + ITerm - DTerm,1); //Apply with final scaling
   }
 
   //YAW
@@ -1295,7 +1295,10 @@ void loop () {
   
   ITerm = constrain((int16_t)(errorGyroI_YAW>>13),-GYRO_I_MAX,+GYRO_I_MAX);
   
-  axisPID[YAW] =  PTerm + ITerm;
+  int16_t K_term = mul(constrain(rcData[THROTTLE]-1000,0,1000),K)>>8; //Throttle compensation.
+
+  axisPID[YAW] = mul(PTerm + ITerm,1); //Scaling for the yaw reaction.
+  axisPID[YAW] += K_term;
   
 #elif PID_CONTROLLER == 2 // alexK
   #define GYRO_I_MAX 256

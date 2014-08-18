@@ -316,7 +316,7 @@
     #define COLLECTIVE_PITCH      THROTTLE
 
     /* Limit the range of Collective Pitch. 100% is Full Range each way and position for Zero Pitch */
-    #define COLLECTIVE_RANGE { 20, -75, 20 }// {Min%, ZeroPitch offset from 1500, Max%}.
+    #define COLLECTIVE_RANGE { 5, -175, 5 }// {Min%, ZeroPitch offset from 1500, Max%}.
     #define YAWMOTOR                 1       // If a motor is used as YAW Set to 1 else set to 0.
 
     /* Servo mixing for heli 120

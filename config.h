@@ -50,7 +50,7 @@
     //#define AIRPLANE
     //#define SINGLECOPTER
     //#define DUALCOPTER
-    //#define HELI_120_CCPM
+    #define HELI_120_CCPM
     //#define HELI_90_DEG
 
   /****************************    Motor minthrottle    *******************************/
@@ -60,16 +60,17 @@
     //#define MINTHROTTLE 1120 // for Super Simple ESCs 10A
     //#define MINTHROTTLE 1064 // special ESC (simonk)
     //#define MINTHROTTLE 1050 // for brushed ESCs like ladybird
-    #define MINTHROTTLE 1150 // (*) (**)
+    #define MINTHROTTLE 1135 // (*) (**)
+	#define TAIL_MIN_ARMED 1150 // Minimum throttle to keep the tail motor when armed.
 
   /****************************    Motor maxthrottle    *******************************/
     /* this is the maximum value for the ESCs at full power, this value can be increased up to 2000 */
-    #define MAXTHROTTLE 1850
+    #define MAXTHROTTLE 1600
 
   /****************************    Mincommand          *******************************/
     /* this is the value for the ESCs when they are not armed
        in some cases, this value must be lowered down to 900 for some specific ESCs, otherwise they failed to initiate */
-    #define MINCOMMAND  1000
+    #define MINCOMMAND  1020
 
   /**********************************  I2C speed for old WMP config (useless config for other sensors)  *************/
     #define I2C_SPEED 100000L     //100kHz normal mode, this value must be used for a genuine WMP
@@ -96,7 +97,7 @@
       //#define FREEIMUv035_BMP // FreeIMU v0.3.5_BMP
       //#define FREEIMUv04      // FreeIMU v0.4 with MPU6050, HMC5883L, MS561101BA                  <- confirmed by Alex
       //#define FREEIMUv043     // same as FREEIMUv04 with final MPU6050 (with the right ACC scale)
-      //#define NANOWII         // the smallest multiwii FC based on MPU6050 + pro micro based proc <- confirmed by Alex
+      #define NANOWII         // the smallest multiwii FC based on MPU6050 + pro micro based proc <- confirmed by Alex
       //#define PIPO            // 9DOF board from erazz
       //#define QUADRINO        // full FC board 9DOF+baro board from witespy  with BMP085 baro     <- confirmed by Alex
       //#define QUADRINO_ZOOM   // full FC board 9DOF+baro board from witespy  second edition
@@ -196,11 +197,41 @@
       /* ADC accelerometer */ // for 5DOF from sparkfun, uses analog PIN A1/A2/A3
       //#define ADCACC
 
-      /* enforce your individual sensor orientation - even overrides board specific defaults */
+      /* enforce your individual sensor orientation - even overrides board specific defaults
+	  AXES ON THE GYRO_ACCELEROMETER:
+
+					^
+					|  Y
+
+				 -------               /
+				 |1    |              /______  ARROW ON NANOWII
+				 | top |  -> X        \
+				 |     |               \
+				 -------
+				Z upwards
+
+
+			ACCORDING TO MULTIWII FAQ:
+			http://www.multiwii.com/faq#How_should_be_the_sensor_axis_directions
+
+			****TILT the MULTI to the RIGHT (left side up):
+			MAG_ROLL, ACC_ROLL and GYRO_ROLL goes up
+			MAG_Z and ACC_Z goes down
+
+			****TILT the MULTI forward (tail up):
+			MAG_PITCH, ACC_PITCH and GYRO_PITCH goes up
+			MAG_Z and ACC_Z goes down
+
+			****Rotating the copter clockwise (YAW) (VIEWED FROM TOP):
+			GYRO_YAW goes up
+
+			****The copter stays level:
+			MAG_Z is positive ; ACC_Z is positive*/
       //#define FORCE_ACC_ORIENTATION(X, Y, Z)  {imu.accADC[ROLL]  =  Y; imu.accADC[PITCH]  = -X; imu.accADC[YAW]  = Z;}
       //#define FORCE_GYRO_ORIENTATION(X, Y, Z) {imu.gyroADC[ROLL] = -Y; imu.gyroADC[PITCH] =  X; imu.gyroADC[YAW] = Z;}
       //#define FORCE_MAG_ORIENTATION(X, Y, Z)  {imu.magADC[ROLL]  =  X; imu.magADC[PITCH]  =  Y; imu.magADC[YAW]  = Z;}
-
+	  #define FORCE_ACC_ORIENTATION(X, Y, Z)  {imu.accADC[ROLL]  = -X; imu.accADC[PITCH]  =  -Z; imu.accADC[YAW]  =  -Y;}
+      #define FORCE_GYRO_ORIENTATION(X, Y, Z) {imu.gyroADC[ROLL] = Z; imu.gyroADC[PITCH] = -X; imu.gyroADC[YAW] = Y;}
       /* Board orientation shift */
       /* If you have frame designed only for + mode and you cannot rotate FC phisycally for flying in X mode (or vice versa)
        * you can use one of of this options for virtual sensors rotation by 45 deegres, then set type of multicopter according to flight mode.
@@ -219,7 +250,7 @@
      * 1 = evolved oldschool algorithm (similar to v2.2)
      * 2 = new experimental algorithm from Alex Khoroshko - unsupported - http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671&start=10#p37387
      * */
-    #define PID_CONTROLLER 1
+    #define PID_CONTROLLER 2
 
     /* NEW: not used anymore for servo coptertypes  <== NEEDS FIXING - MOVE TO WIKI */
     #define YAW_DIRECTION 1
@@ -241,9 +272,10 @@
 
     /* if you want to preset min/middle/max values for servos right after flashing, because of limited physical
      * room for servo travel, then you must enable and set all three following options */
-     //#define SERVO_MIN  {1020, 1020, 1020, 1020, 1020, 1020, 1020, 1020}
-     //#define  SERVO_MAX {2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000}
-     //#define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500} // (*)
+	 //PROTO3 Specific: Servo 5: Tail motor, Servo 7: Main motor, 3, 4, 6 for swashplate.
+     #define SERVO_MIN  {1020, 1020, 1020, 1100, 1100, 1020, 1100, 1020}
+     #define  SERVO_MAX {2000, 2000, 2000, 1900, 1900, 2000, 1900, 2000}
+     #define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500} // (*)
      //#define FORCE_SERVO_RATES      {30,30,100,100,100,100,100,100} // 0 = normal, 1= reverse
 
   /***********************          Cam Stabilisation             ***********************/
@@ -283,21 +315,21 @@
     #define COLLECTIVE_PITCH      THROTTLE
 
     /* Limit the range of Collective Pitch. 100% is Full Range each way and position for Zero Pitch */
-    #define COLLECTIVE_RANGE { 80, 0, 80 }// {Min%, ZeroPitch offset from 1500, Max%}.
-    #define YAWMOTOR                 0       // If a motor is used as YAW Set to 1 else set to 0.
+    #define COLLECTIVE_RANGE { 20, -75, 20 }// {Min%, ZeroPitch offset from 1500, Max%}.
+    #define YAWMOTOR                 1       // If a motor is used as YAW Set to 1 else set to 0.
 
     /* Servo mixing for heli 120
                          {Coll,Nick,Roll} */
     #define SERVO_NICK   { +10, -10,  0 }
-    #define SERVO_LEFT   { +10, +5, +10 } 
-    #define SERVO_RIGHT  { +10, +5, -10 } 
+    #define SERVO_LEFT   { +10, +5, -10 } 
+    #define SERVO_RIGHT  { +10, +5, +10 } 
 
-    /* Limit Maximum controll for Roll & Nick  in 0-100% */
+    /* Limit Maximum control for Roll & Nick  in 0-100% */
     #define CONTROL_RANGE   { 100, 100 }      //  { ROLL,PITCH }
 
     /* use servo code to drive the throttle output. You want this for analog servo driving the throttle on IC engines.
        if inactive, throttle output will be treated as a motor output, so it can drive an ESC */
-    //#define HELI_USE_SERVO_FOR_THROTTLE
+    #define HELI_USE_SERVO_FOR_THROTTLE
 
   /***********************      your individual mixing     ***********************/
     /* if you want to override an existing entry in the mixing table, you may want to avoid editing the
@@ -343,7 +375,7 @@
          For MEGA boards, attach sat grey wire to RX1, pin 19. Sat black wire to ground. Sat orange wire to Mega board's 3.3V (or any other 3V to 3.3V source).
          For PROMINI, attach sat grey to RX0.  Attach sat black to ground. */
       //#define SPEKTRUM 1024
-      //#define SPEKTRUM 2048
+      #define SPEKTRUM 2048
       //#define RX_SERIAL_PORT 1    // Forced to 0 on Pro Mini and single serial boards; Set to your choice of 0, 1, or 2 on any Mega based board (defaults to 1 on Mega).
       //**************************
       // Defines that allow a "Bind" of a Spektrum or Compatible Remote Receiver (aka Satellite) via Configuration GUI.
@@ -811,12 +843,14 @@
        with R1=33k and R2=51k
        vbat = [0;1023]*16/VBATSCALE
        must be associated with #define BUZZER ! */
-    //#define VBAT              // uncomment this line to activate the vbat code
-    #define VBATSCALE       131 // (*) (**) change this value if readed Battery voltage is different than real voltage
-    #define VBATNOMINAL     126 // 12,6V full battery nominal voltage - only used for lcd.telemetry
-    #define VBATLEVEL_WARN1 107 // (*) (**) 10,7V
-    #define VBATLEVEL_WARN2  99 // (*) (**) 9.9V
-    #define VBATLEVEL_CRIT   93 // (*) (**) 9.3V - critical condition: if vbat ever goes below this value, permanent alarm is triggered
+
+//We use 2S lipo battery. FULL is 8.4V, Nominal is 7.4V, Empty is 6.4V.
+    #define VBAT              // uncomment this line to activate the vbat code
+    #define VBATSCALE       203 // (*) (**) change this value if readed Battery voltage is different than real voltage
+    #define VBATNOMINAL     74 // 7,4V full battery nominal voltage - only used for lcd.telemetry
+    #define VBATLEVEL_WARN1 70 // (*) (**) 10,7V
+    #define VBATLEVEL_WARN2  68 // (*) (**) 9.9V
+    #define VBATLEVEL_CRIT   64 // (*) (**) 9.3V - critical condition: if vbat ever goes below this value, permanent alarm is triggered
     #define NO_VBAT          16 // Avoid beeping without any battery
 
 

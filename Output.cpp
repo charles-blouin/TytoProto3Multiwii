@@ -1389,7 +1389,11 @@ void mixTable() {
     servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].middle;
     #if YAWMOTOR
       servo[5] = constrain(servo[5], conf.servoConf[5].min, conf.servoConf[5].max); // limit the values
-      if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {servo[5] = MINCOMMAND;} // Kill YawMotor
+      if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {
+		  servo[5] = MINCOMMAND; // Kill YawMotor
+	  }else{
+		  if(f.ARMED) servo[5] = max(TAIL_MIN_ARMED,servo[5]); //Special code to ensure the tailmotor is activated at all times when armed.
+	  } 
     #endif
     if (!f.ARMED){
       servo[7] = MINCOMMAND;          // Kill throttle when disarmed
@@ -1405,7 +1409,7 @@ void mixTable() {
       #if YAWMOTOR
         motor[1] = servo[5];   // use motor2 output for YAWMOTOR
       #endif
-    #endif
+    #endif	
 
     //              ( Collective, Pitch/Nick, Roll ) Change sign to invert
     /************************************************************************************************************/
@@ -1419,6 +1423,7 @@ void mixTable() {
       servo[4]  =  HeliXPIDMIX( ( SERVODIR(4,4) * leftMix[0]), SERVODIR(4,2) * leftMix[1], SERVODIR(4,1) * leftMix[2]);   //    LEFT  servo
       servo[6]  =  HeliXPIDMIX( ( SERVODIR(6,4) * rightMix[0]),SERVODIR(6,2) * rightMix[1],SERVODIR(6,1) * rightMix[2]);  //    RIGHT servo
     #endif
+
     /************************************************************************************************************/
     #ifdef HELI_90_DEG
       servo[3]  = HeliXPIDMIX( +0, (conf.servoConf[3].rate/10), -0);      //     NICK  servo

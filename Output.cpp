@@ -1386,7 +1386,7 @@ void mixTable() {
     /* Throttle & YAW
     ******************** */
     // Yaw control is common for Heli 90 & 120
-    servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].middle;
+    servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].min;
     #if YAWMOTOR
       servo[5] = constrain(servo[5], conf.servoConf[5].min, conf.servoConf[5].max); // limit the values
       if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {
@@ -1403,6 +1403,10 @@ void mixTable() {
         servo[7] += governorThrottle;
       #endif
       servo[7] = constrain(servo[7], conf.minthrottle, MAXTHROTTLE);   //  limit min & max    }
+
+	  #ifdef VBAT
+			if(alarmArray[6] >= 2) servo[7] = conf.minthrottle; //Battery low. Forced landing.
+	  #endif
     }
     #ifndef HELI_USE_SERVO_FOR_THROTTLE
       motor[0] = servo[7];     // use real motor output - ESC capable

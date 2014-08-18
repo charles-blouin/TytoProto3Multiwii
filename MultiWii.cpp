@@ -1110,6 +1110,9 @@ void loop () {
     switch (taskOrder) {
       case 0:
         taskOrder++;
+		#ifdef VBAT
+			if(alarmArray[6] == 4) f.OK_TO_ARM = 0; //Battery too low. Keep from arming.
+		#endif
         #if MAG
           if (Mag_getADC() != 0) break; // 320 µs
         #endif
@@ -1227,6 +1230,11 @@ void loop () {
 
   //**** PITCH & ROLL & YAW PID ****
 #if PID_CONTROLLER == 1 // evolved oldschool
+
+  //ADJUSTEMENT COEFF
+  //int K = map(rcData[AUX3],1000,2000,0,256);
+  //debug[0]=K;
+
   if ( f.HORIZON_MODE ) prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
 
   // PITCH & ROLL
@@ -1240,21 +1248,20 @@ void loop () {
 
     PTerm = mul(rc,conf.pid[axis].P8)>>6;
     
-    if (f.ANGLE_MODE || f.HORIZON_MODE) { // axis relying on ACC
-      // 50 degrees max inclination
-      errorAngle         = constrain(rc + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
-      errorAngleI[axis]  = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);                                                // WindUp     //16 bits is ok here
+    // axis relying on ACC
+    // 50 degrees max inclination
+    errorAngle         = constrain(rc + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
+    errorAngleI[axis]  = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);                                                // WindUp     //16 bits is ok here
 
-      PTermACC           = mul(errorAngle,conf.pid[PIDLEVEL].P8)>>7; // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768   16 bits is ok for result
+    PTermACC           = mul(errorAngle,conf.pid[PIDLEVEL].P8)>>7; // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768   16 bits is ok for result
 
-      int16_t limit      = conf.pid[PIDLEVEL].D8*5;
-      PTermACC           = constrain(PTermACC,-limit,+limit);
+    int16_t limit      = conf.pid[PIDLEVEL].D8*5;
+    PTermACC           = constrain(PTermACC,-limit,+limit);
 
-      ITermACC           = mul(errorAngleI[axis],conf.pid[PIDLEVEL].I8)>>12;   // 32 bits is needed for calculation:10000*I8 could exceed 32768   16 bits is ok for result
+    ITermACC           = mul(errorAngleI[axis],conf.pid[PIDLEVEL].I8)>>12;   // 32 bits is needed for calculation:10000*I8 could exceed 32768   16 bits is ok for result
 
-      ITerm              = ITermACC + ((ITerm-ITermACC)*prop>>9);
-      PTerm              = PTermACC + ((PTerm-PTermACC)*prop>>9);
-    }
+    ITerm              = ITermACC + ((ITerm-ITermACC)*prop>>9);
+    PTerm              = PTermACC + ((PTerm-PTermACC)*prop>>9);
 
     PTerm -= mul(imu.gyroData[axis],dynP8[axis])>>6; // 32 bits is needed for calculation   
 

@@ -65,7 +65,8 @@
 
   /****************************    Motor maxthrottle    *******************************/
     /* this is the maximum value for the ESCs at full power, this value can be increased up to 2000 */
-    #define MAXTHROTTLE 1600
+    #define MAXTHROTTLE 1800
+    #define MAXTAILMOTOR 1400 //Limit to avoid burning 1S motor on 2S...
 
   /****************************    Mincommand          *******************************/
     /* this is the value for the ESCs when they are not armed
@@ -250,7 +251,7 @@
      * 1 = evolved oldschool algorithm (similar to v2.2)
      * 2 = new experimental algorithm from Alex Khoroshko - unsupported - http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671&start=10#p37387
      * */
-    #define PID_CONTROLLER 2
+    #define PID_CONTROLLER 1
 
     /* NEW: not used anymore for servo coptertypes  <== NEEDS FIXING - MOVE TO WIKI */
     #define YAW_DIRECTION 1
@@ -274,8 +275,8 @@
      * room for servo travel, then you must enable and set all three following options */
 	 //PROTO3 Specific: Servo 5: Tail motor, Servo 7: Main motor, 3, 4, 6 for swashplate.
      #define SERVO_MIN  {1020, 1020, 1020, 1100, 1100, 1020, 1100, 1020}
-     #define  SERVO_MAX {2000, 2000, 2000, 1900, 1900, 2000, 1900, 2000}
-     #define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500} // (*)
+     #define  SERVO_MAX {2000, 2000, 2000, 1900, 1900, MAXTAILMOTOR, 1900, 2000}
+     #define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1250, 1500, 1500} // (*)
      //#define FORCE_SERVO_RATES      {30,30,100,100,100,100,100,100} // 0 = normal, 1= reverse
 
   /***********************          Cam Stabilisation             ***********************/
@@ -535,7 +536,7 @@
       //#define MPU6050_LPF_98HZ
       //#define MPU6050_LPF_42HZ
       //#define MPU6050_LPF_20HZ
-      //#define MPU6050_LPF_10HZ
+      #define MPU6050_LPF_10HZ
       //#define MPU6050_LPF_5HZ       // Use this only in extreme cases, rather change motors and/or props
 
     /******                Gyro smoothing    **********************************/
@@ -845,7 +846,7 @@
        must be associated with #define BUZZER ! */
 
 //We use 2S lipo battery. FULL is 8.4V, Nominal is 7.4V, Empty is 6.4V.
-    #define VBAT              // uncomment this line to activate the vbat code
+    //#define VBAT              // uncomment this line to activate the vbat code
     #define VBATSCALE       203 // (*) (**) change this value if readed Battery voltage is different than real voltage
     #define VBATNOMINAL     74 // 7,4V full battery nominal voltage - only used for lcd.telemetry
     #define VBATLEVEL_WARN1 70 // (*) (**) 10,7V

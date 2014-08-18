@@ -252,14 +252,14 @@ void getEstimatedAttitude(){
   att.angle[PITCH] = _atan2(EstG.V16.Y , InvSqrt(sqGX_sqGZ)*sqGX_sqGZ);
 
   //note on the second term: mathematically there is a risk of overflow (16*16*16=48 bits). assumed to be null with real values
-  att.heading = _atan2(
+  att.angle[YAW] = _atan2(
     mul(EstM.V16.Z , EstG.V16.X) - mul(EstM.V16.X , EstG.V16.Z),
     (EstM.V16.Y * sqGX_sqGZ  - (mul(EstM.V16.X , EstG.V16.X) + mul(EstM.V16.Z , EstG.V16.Z)) * EstG.V16.Y)*invG );
+  att.heading = att.angle[YAW]/10;
   #if MAG
     att.heading += conf.mag_declination; // Set from GUI
   #endif
-  att.heading /= 10;
-
+  
   #if defined(THROTTLE_ANGLE_CORRECTION)
     cosZ = mul(EstG.V16.Z , 100) / ACC_1G ;                                                   // cos(angleZ) * 100 
     throttleAngleCorrection = THROTTLE_ANGLE_CORRECTION * constrain(100 - cosZ, 0, 100) >>3;  // 16 bit ok: 200*150 = 30000  

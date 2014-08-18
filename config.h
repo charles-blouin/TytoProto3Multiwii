@@ -61,7 +61,7 @@
     //#define MINTHROTTLE 1064 // special ESC (simonk)
     //#define MINTHROTTLE 1050 // for brushed ESCs like ladybird
     #define MINTHROTTLE 1135 // (*) (**)
-	#define TAIL_MIN_ARMED 1150 // Minimum throttle to keep the tail motor when armed.
+	#define TAIL_MIN_ARMED 1175 // Minimum throttle to keep the tail motor when armed.
 
   /****************************    Motor maxthrottle    *******************************/
     /* this is the maximum value for the ESCs at full power, this value can be increased up to 2000 */
@@ -250,8 +250,9 @@
     /* choose one of the alternate PID control algorithms
      * 1 = evolved oldschool algorithm (similar to v2.2)
      * 2 = new experimental algorithm from Alex Khoroshko - unsupported - http://www.multiwii.com/forum/viewtopic.php?f=8&t=3671&start=10#p37387
+	 * 3 = our own experimental flybarless controller
      * */
-    #define PID_CONTROLLER 1
+    #define PID_CONTROLLER 3
 
     /* NEW: not used anymore for servo coptertypes  <== NEEDS FIXING - MOVE TO WIKI */
     #define YAW_DIRECTION 1
@@ -321,9 +322,9 @@
 
     /* Servo mixing for heli 120
                          {Coll,Nick,Roll} */
-    #define SERVO_NICK   { +10, -10,  0 }
-    #define SERVO_LEFT   { +10, +5, -10 } 
-    #define SERVO_RIGHT  { +10, +5, +10 } 
+    #define SERVO_NICK   { +10, -15,  0 }
+    #define SERVO_LEFT   { +10, +7, -10 } 
+    #define SERVO_RIGHT  { +10, +7, +10 } 
 
     /* Limit Maximum control for Roll & Nick  in 0-100% */
     #define CONTROL_RANGE   { 100, 100 }      //  { ROLL,PITCH }
@@ -534,16 +535,16 @@
       //#define MPU6050_LPF_256HZ     // This is the default setting, no need to uncomment, just for reference
       //#define MPU6050_LPF_188HZ
       //#define MPU6050_LPF_98HZ
-      //#define MPU6050_LPF_42HZ
+      #define MPU6050_LPF_42HZ
       //#define MPU6050_LPF_20HZ
-      #define MPU6050_LPF_10HZ
+      //#define MPU6050_LPF_10HZ
       //#define MPU6050_LPF_5HZ       // Use this only in extreme cases, rather change motors and/or props
 
     /******                Gyro smoothing    **********************************/
       /* GYRO_SMOOTHING. In case you cannot reduce vibrations _and_ _after_ you have tried the low pass filter options, you
          may try this gyro smoothing via averaging. Not suitable for multicopters!
          Good results for helicopter, airplanes and flying wings (foamies) with lots of vibrations.*/
-      //#define GYRO_SMOOTHING {20, 20, 3}    // (*) separate averaging ranges for roll, pitch, yaw
+      //#define GYRO_SMOOTHING {20, 20, 50}    // (*) separate averaging ranges for roll, pitch, yaw
 
     /************************    Moving Average Gyros    **********************************/
       //#define MMGYRO 10                      // (*) Active Moving Average Function for Gyros

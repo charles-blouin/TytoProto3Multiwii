@@ -787,6 +787,9 @@ void loop () {
   static int16_t lastError[3] = {0,0,0};
   int16_t deltaSum;
   int16_t AngleRateTmp, RateError;
+#elif PID_CONTROLLER == 3
+  static float errorI[3] = {0,0,0};
+  static int32_t YAW_setpoint_acc = 0;
 #endif
   static uint16_t rcTime  = 0;
   static int16_t initialThrottleHold;
@@ -848,11 +851,17 @@ void loop () {
     // perform actions    
     if (rcData[THROTTLE] <= MINCHECK) {            // THROTTLE at minimum
       #if !defined(FIXEDWING)
-        errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0;
         #if PID_CONTROLLER == 1
           errorGyroI_YAW = 0;
+		  errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0;
         #elif PID_CONTROLLER == 2
           errorGyroI[YAW] = 0;
+		  errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0;
+		#elif PID_CONTROLLER == 3
+		  errorI[ROLL] = 0;
+		  errorI[PITCH] = 0;
+		  errorI[YAW] = 0;
+		  YAW_setpoint_acc = 0;
         #endif
         errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
       #endif
@@ -1230,12 +1239,7 @@ void loop () {
 
   //**** PITCH & ROLL & YAW PID ****
 #if PID_CONTROLLER == 1 // evolved oldschool
-
-  //ADJUSTEMENT COEFF
-  int K = map(rcData[AUX3],1000,2000,0,256);
-  debug[0]=K;
-
-  prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
+  if ( f.HORIZON_MODE ) prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
 
   // PITCH & ROLL
   for(axis=0;axis<2;axis++) {
@@ -1248,20 +1252,21 @@ void loop () {
 
     PTerm = mul(rc,conf.pid[axis].P8)>>6;
     
-    // axis relying on ACC
-    // 50 degrees max inclination
-    errorAngle         = constrain(rc + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
-    errorAngleI[axis]  = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);                                                // WindUp     //16 bits is ok here
+    if (f.ANGLE_MODE || f.HORIZON_MODE) { // axis relying on ACC
+      // 50 degrees max inclination
+      errorAngle         = constrain(rc + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
+      errorAngleI[axis]  = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);                                                // WindUp     //16 bits is ok here
 
-    PTermACC           = mul(errorAngle,conf.pid[PIDLEVEL].P8)>>7; // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768   16 bits is ok for result
+      PTermACC           = mul(errorAngle,conf.pid[PIDLEVEL].P8)>>7; // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768   16 bits is ok for result
 
-    int16_t limit      = conf.pid[PIDLEVEL].D8*5;
-    PTermACC           = constrain(PTermACC,-limit,+limit);
+      int16_t limit      = conf.pid[PIDLEVEL].D8*5;
+      PTermACC           = constrain(PTermACC,-limit,+limit);
 
-    ITermACC           = mul(errorAngleI[axis],conf.pid[PIDLEVEL].I8)>>12;   // 32 bits is needed for calculation:10000*I8 could exceed 32768   16 bits is ok for result
+      ITermACC           = mul(errorAngleI[axis],conf.pid[PIDLEVEL].I8)>>12;   // 32 bits is needed for calculation:10000*I8 could exceed 32768   16 bits is ok for result
 
-    ITerm              = ITermACC + ((ITerm-ITermACC)*prop>>9);
-    PTerm              = PTermACC + ((PTerm-PTermACC)*prop>>9);
+      ITerm              = ITermACC + ((ITerm-ITermACC)*prop>>9);
+      PTerm              = PTermACC + ((PTerm-PTermACC)*prop>>9);
+    }
 
     PTerm -= mul(imu.gyroData[axis],dynP8[axis])>>6; // 32 bits is needed for calculation   
 
@@ -1271,9 +1276,9 @@ void loop () {
     delta2[axis]   = delta1[axis];
     delta1[axis]   = delta;
  
-    DTerm = mul(DTerm,dynD8[axis])>>5;  // 32 bits is needed for calculation
+    DTerm = mul(DTerm,dynD8[axis])>>5;        // 32 bits is needed for calculation
 
-    axisPID[axis] =  mul(PTerm + ITerm - DTerm,1); //Apply with final scaling
+    axisPID[axis] =  PTerm + ITerm - DTerm;
   }
 
   //YAW
@@ -1295,10 +1300,7 @@ void loop () {
   
   ITerm = constrain((int16_t)(errorGyroI_YAW>>13),-GYRO_I_MAX,+GYRO_I_MAX);
   
-  int16_t K_term = mul(constrain(rcData[THROTTLE]-1000,0,1000),K)>>8; //Throttle compensation.
-
-  axisPID[YAW] = mul(PTerm + ITerm,1); //Scaling for the yaw reaction.
-  axisPID[YAW] += K_term;
+  axisPID[YAW] =  PTerm + ITerm;
   
 #elif PID_CONTROLLER == 2 // alexK
   #define GYRO_I_MAX 256
@@ -1362,6 +1364,83 @@ void loop () {
 
     //-----calculate total PID output
     axisPID[axis] =  PTerm + ITerm + DTerm;
+  }
+#elif PID_CONTROLLER == 3 // Flybarless controller
+  //ADJUSTEMENT COEFF (from remote pot)
+  int K = map(rcData[AUX3],1000,2000,0,256);
+  debug[0]=K;
+
+  //*** Adjustable parameters ***
+  //Also PID coefficients for ROLL, PITCH, YAW
+  #define YAW_SPEED 9 //A shifted value, ie, lower val is faster yaw speed (from remote)
+  #define TILT_ANGLE 150 //in 10th of degrees
+  #define DERIV_LPF 0.95 //For the lpf of the derivative
+  #define YAW_RC_DEADBAND 10
+
+  //*** Main flybarless controller code ***
+  for(axis=0;axis<3;axis++) {
+	//Get raw variables
+	//int16_t raw_gyro = imu.gyroData[axis];
+	int16_t raw_rc = rcCommand[axis];
+	int16_t raw_angle = att.angle[axis]-conf.angleTrim[axis];
+
+	static float D_error_lpf[3] = {0,0,0};
+	static int16_t last_error[3] = {0,0,0};
+
+	//Get position setpoint
+    //For YAW, the angle setpoint changes proportionally at a speed with RC yaw.
+    //For PITCH, ROLL, the angle setpoint is directly the RC command.
+	int16_t pos_setpoint;
+	if(axis==YAW){
+		if(abs(raw_rc) > YAW_RC_DEADBAND) YAW_setpoint_acc += raw_rc;
+		static int16_t last_raw_angle = 0;
+		
+		//Handle overflow at 180deg.
+		if(last_raw_angle>1700 && raw_angle<-1700){
+			YAW_setpoint_acc -= ((int32_t)3600)<<YAW_SPEED; 
+		}else{
+			if(last_raw_angle<-1700 && raw_angle>1700){
+				YAW_setpoint_acc += ((int32_t)3600)<<YAW_SPEED; 
+			}
+		}
+
+		last_raw_angle = raw_angle;
+		pos_setpoint = YAW_setpoint_acc>>YAW_SPEED;
+	}else{
+		pos_setpoint = map(raw_rc,-200,200,-TILT_ANGLE,TILT_ANGLE);
+	}
+
+	//Get the position error
+	int16_t pos_error = constrain(raw_angle-pos_setpoint,-300,300);
+
+	//Integrate the error
+	errorI[axis] += cycleTime * 0.000001 * pos_error;
+	errorI[axis] = constrain(errorI[axis],-500.0,500.0);
+
+	//Get the derivative of the error
+	int32_t deriv = (((int32_t)(pos_error-last_error[axis]))<<14)/cycleTime;
+	last_error[axis] = pos_error;
+	D_error_lpf[axis] = DERIV_LPF*D_error_lpf[axis] + (1.0-DERIV_LPF)*deriv;
+
+	//Get the PID terms
+	int16_t P = mul(conf.pid[axis].P8,pos_error)>>9;
+	int16_t I = ((int32_t)(conf.pid[axis].I8*errorI[axis]))>>6;
+	int16_t D = ((int32_t)(conf.pid[axis].D8*D_error_lpf[axis]))>>4;
+
+	if(axis == YAW){
+		P = mul(K,pos_error)>>9;
+		debug[1] = P;
+		debug[2] = rcCommand[THROTTLE];
+		debug[3] = D;
+	}
+
+	//Apply the total response
+	if(axis==YAW){
+		axisPID[axis] = -P -I -D;
+		axisPID[axis] += rcCommand[THROTTLE] - MINTHROTTLE; //Add an offset to the tail motor
+	}else{
+		axisPID[axis] = P + I + D;
+	}
   }
 #else
   #error "*** you must set PID_CONTROLLER to one existing implementation"

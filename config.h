@@ -60,8 +60,8 @@
     //#define MINTHROTTLE 1120 // for Super Simple ESCs 10A
     //#define MINTHROTTLE 1064 // special ESC (simonk)
     //#define MINTHROTTLE 1050 // for brushed ESCs like ladybird
-    #define MINTHROTTLE 1135 // (*) (**)
-	#define TAIL_MIN_ARMED 1175 // Minimum throttle to keep the tail motor when armed.
+    #define MINTHROTTLE 1150 // (*) (**)
+	#define TAIL_MIN_ARMED 1150 // Minimum throttle to keep the tail motor when armed.
 
   /****************************    Motor maxthrottle    *******************************/
     /* this is the maximum value for the ESCs at full power, this value can be increased up to 2000 */

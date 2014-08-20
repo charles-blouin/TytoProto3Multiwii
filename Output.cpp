@@ -1378,6 +1378,19 @@ void mixTable() {
       heliNick = axisPID[PITCH];
     }
 
+	//HELI SWASH PLATE PHASE TUNING. Use PASSTHROUGH mode. Tune until a ROLL cyclic does not result into a PITCH moment, and vice versa.
+	//#define PHASE 30.6 //Swashplate phase shift in degrees. IMPORTANT TO TUNE BEFORE TUNING PID!!!
+    //float cos_phase = cos(PHASE*3.1415/180.0);
+	//float sin_phase = sin(PHASE*3.1415/180.0);
+    #define COS_PHASE 0.860742027 //HARDCODED FOR RUNNING SPEED
+    #define SIN_PHASE 0.509041416
+
+	//Swashplate phase rotation
+	float ROLL = heliRoll*COS_PHASE + heliNick*SIN_PHASE;
+	float NICK = -heliRoll*SIN_PHASE + heliNick*COS_PHASE;
+	heliRoll = ROLL;
+	heliNick = NICK;
+
     // Limit Maximum Rates for Heli
     int16_t cRange[2] = CONTROL_RANGE;
     heliRoll*= cRange[0]*0.01;
@@ -1386,14 +1399,26 @@ void mixTable() {
     /* Throttle & YAW
     ******************** */
     // Yaw control is common for Heli 90 & 120
-    servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].min;
+    servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + TAIL_MIN_ARMED;
     #if YAWMOTOR
+	  static int start_sequence = 0;
       servo[5] = constrain(servo[5], conf.servoConf[5].min, conf.servoConf[5].max); // limit the values
       if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {
 		  servo[5] = MINCOMMAND; // Kill YawMotor
 	  }else{
 		  if(f.ARMED) servo[5] = max(TAIL_MIN_ARMED,servo[5]); //Special code to ensure the tailmotor is activated at all times when armed.
 	  } 
+
+	  if(f.ARMED){
+		if(start_sequence<150){
+			start_sequence++; //Apply more power for motor startup.
+			servo[5] = TAIL_MIN_ARMED + 200;
+		}
+	  }else{
+	    start_sequence = 0;
+	  }
+
+	  //servo[5] = conf.servoConf[5].min; //Temporarily disable the tail motor
     #endif
     if (!f.ARMED){
       servo[7] = MINCOMMAND;          // Kill throttle when disarmed

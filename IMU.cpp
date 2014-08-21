@@ -10,10 +10,10 @@ void getEstimatedAttitude();
 
 void computeIMU () {
   uint8_t axis;
-  static int16_t gyroADCprevious[3] = {0,0,0};
-  static int16_t gyroADCinter[3];
+  //static int16_t gyroADCprevious[3] = {0,0,0};
+  //static int16_t gyroADCinter[3];
 
-  uint16_t timeInterleave = 0;
+  //uint16_t timeInterleave = 0;
   #if ACC
     ACC_getADC();
     getEstimatedAttitude();
@@ -21,21 +21,23 @@ void computeIMU () {
   #if GYRO
     Gyro_getADC();
   #endif
-  for (axis = 0; axis < 3; axis++)
-    gyroADCinter[axis] =  imu.gyroADC[axis];
-  timeInterleave=micros();
+	//for (axis = 0; axis < 3; axis++){
+	//	gyroADCinter[axis] =  imu.gyroADC[axis];
+	//}
+  //timeInterleave=micros();
   annexCode();
-  uint8_t t=0;
-  while((int16_t)(micros()-timeInterleave)<650) t=1; //empirical, interleaving delay between 2 consecutive reads
-  if (!t) annex650_overrun_count++;
-  #if GYRO
-    Gyro_getADC();
-  #endif
+  //uint8_t t=0;
+  //while((int16_t)(micros()-timeInterleave)<650) t=1; //empirical, interleaving delay between 2 consecutive reads
+  //if (!t) annex650_overrun_count++;
+  //#if GYRO
+  //  Gyro_getADC();
+  //#endif
   for (axis = 0; axis < 3; axis++) {
-    gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCinter[axis];
+    //gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCinter[axis];
     // empirical, we take a weighted value of the current and the previous values
-    imu.gyroData[axis] = (gyroADCinter[axis]+gyroADCprevious[axis])/3;
-    gyroADCprevious[axis] = gyroADCinter[axis]>>1;
+    //imu.gyroData[axis] = (gyroADCinter[axis]+gyroADCprevious[axis])/3;
+	imu.gyroData[axis] = imu.gyroADC[axis]>>2; //Convert to 13bits...
+    //gyroADCprevious[axis] = gyroADCinter[axis]>>1;
     if (!ACC) imu.accADC[axis]=0;
   }
   #if defined(GYRO_SMOOTHING)
@@ -207,7 +209,7 @@ void getEstimatedAttitude(){
 
   // unit: radian per bit, scaled by 2^16 for further multiplication
   // with a delta time of 3000 us, and GYRO scale of most gyros, scale = a little bit less than 1
-  scale = (currentT - previousT) * (GYRO_SCALE * 65536);
+  scale = (currentT - previousT) * (GYRO_SCALE * 65536.0);
   previousT = currentT;
 
   // Initialization
@@ -218,8 +220,8 @@ void getEstimatedAttitude(){
     // used to calculate later the magnitude of acc vector
     accMag   += mul(imu.accSmooth[axis] , imu.accSmooth[axis]);
     // unit: radian scaled by 2^16
-    // imu.gyroADC[axis] is 14 bit long, the scale factor ensure deltaGyroAngle16[axis] is still 14 bit long
-    deltaGyroAngle16[axis] = imu.gyroADC[axis]  * scale;
+    // imu.gyroData[axis] is 13 bit long, the scale factor ensure deltaGyroAngle16[axis] is still 13 bit long
+    deltaGyroAngle16[axis] = imu.gyroData[axis]  * scale;
   }
 
   // we rotate the intermediate 32 bit vector with the radian vector (deltaGyroAngle16), scaled by 2^16

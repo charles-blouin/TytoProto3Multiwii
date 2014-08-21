@@ -788,8 +788,7 @@ void loop () {
   int16_t deltaSum;
   int16_t AngleRateTmp, RateError;
 #elif PID_CONTROLLER == 3
-  static float errorI[3] = {0,0,0};
-  static int32_t YAW_setpoint_acc = 0;
+  static int32_t yawIntegrator = 0;
 #endif
   static uint16_t rcTime  = 0;
   static int16_t initialThrottleHold;
@@ -858,10 +857,7 @@ void loop () {
           errorGyroI[YAW] = 0;
 		  errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0;
 		#elif PID_CONTROLLER == 3
-		  errorI[ROLL] = 0;
-		  errorI[PITCH] = 0;
-		  errorI[YAW] = 0;
-		  YAW_setpoint_acc = 0;
+		  yawIntegrator = 0;
         #endif
         errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
       #endif
@@ -1365,140 +1361,137 @@ void loop () {
     //-----calculate total PID output
     axisPID[axis] =  PTerm + ITerm + DTerm;
   }
-#elif PID_CONTROLLER == 3 // Flybarless controller
+#elif PID_CONTROLLER == 3 // Flybarless controller, does not use the actual orientation, only the gyros at high precision (gyroADC, at full sensor sensitivity).
   //ADJUSTEMENT COEFF (from remote pot)
-  int K = map(rcData[AUX3],1000,2000,0,256);
+  int K = map(rcData[AUX3],1000,2000,0,200);
   debug[0]=K;
 
   //*** Adjustable parameters ***
   //Also PID coefficients for ROLL, PITCH, YAW
-  #define YAW_SPEED 9 //A shifted value, ie, lower val is faster yaw speed (from remote)
-  #define TILT_ANGLE 100 //in 10th of degrees
-  #define DERIV_LPF 0.75 //For the lpf of the derivative
-  #define DERIV_MAX 20.0 //Limits the derivative amplitude
-  #define YAW_RC_DEADBAND 10
-  #define YAW_MAX_ERROR 1800 //To avoid error accumulating over more than one turn
-  #define YAW_MAX_I 500.0
-  #define SWASH_MAX_I 50.0
-  #define ROLL_RATIO 0.3//K*0.00390625 //(K/256) //From 0 to 1. Take into account different ROLL, PITCH...
-  #define SCALE_FACTOR K*0.00390625 //(K/256) //From 0 to 1. For development purposes only...
+  #define RC_TRIM_SPEED 10 //A shifted value, ie, lower val is faster. For auto trimming.
+  //#define YAW_SPEED 7 //A shifted value, ie, lower val is faster yaw speed (from remote)
+  #define TILT_ANGLE 30.0 //Max tilt at full cyclic in degrees
+  //#define DERIV_LPF 0.0 //For the lpf of the derivative
+  //#define DERIV_MAX 20.0 //Limits the derivative amplitude
+  #define YAW_RC_DEADBAND 15
+  #define YAW_RATE 25.0 //Yaw turn rate in deg/s 
+  //#define YAW_MAX_ERROR 1800 //To avoid error accumulating over more than one turn
+  //#define YAW_MAX_I 200.0
+  //#define SWASH_MAX_I 50.0
+  #define ROLL_RATIO (((float)180)*0.002) //(K/256) //From 0 to 1. Take into account different ROLL, PITCH...
+  //#define SCALE_FACTOR 2.0 //(K/256) //From 0 to 1. For development purposes only...
 
   //*** Main flybarless controller code ***
-  int16_t throttleVal = max((servo[7] - MINTHROTTLE)>>2,0);
+  int16_t throttleVal = max((servo[7] - MINTHROTTLE)>>2,0); //up to about 160;
+  static int32_t rc_trim[2] = {0,0};
+  static float angle[3] = {0.0,0.0,0.0};
+  static float setpoint[3] = {0.0,0.0,0.0};
   for(axis=0;axis<3;axis++) {
-	//Get raw variables
-	//int16_t raw_gyro = imu.gyroData[axis];
-	int16_t raw_rc = rcCommand[axis];
-	int16_t raw_angle = att.angle[axis]-conf.angleTrim[axis];
-	
 
-	static float D_error_lpf[3] = {0,0,0};
-	static int32_t last_error[3] = {0,0,0};
+	//Get raw variables
+	float raw_gyro = (float)imu.gyroADC[axis]*GYRO_ADC_SCALE; //In deg/s.
+	int16_t raw_rc = rcCommand[axis]; //Approx +-200 in range.
+	float dt = ((float) cycleTime)*0.000001; //In seconds
+
+	//Integrate to get the angle
+	angle[axis] += raw_gyro*dt; //Integrated angle in degrees.
+
+	//Trim the roll/pitch remote
+	/*if(axis!=YAW){
+		if(abs(raw_rc)>3) rc_trim[axis] += raw_rc;
+		raw_rc += rc_trim[axis]>>RC_TRIM_SPEED;
+	}*/
 
 	//Get position setpoint
     //For YAW, the angle setpoint changes proportionally at a speed with RC yaw.
     //For PITCH, ROLL, the angle setpoint is directly the RC command.
-	int16_t pos_setpoint;
+	float deriv_setpoint = 0.0; //The derivative of the setpoint.
 	if(axis==YAW){
-		if(abs(raw_rc) > YAW_RC_DEADBAND) YAW_setpoint_acc += raw_rc;
-		static int16_t last_raw_angle = 0;
-		
-		//Handle overflow at 180deg.
-		if(last_raw_angle>1700 && raw_angle<-1700){
-			YAW_setpoint_acc -= ((int32_t)3600)<<YAW_SPEED; 
-		}else{
-			if(last_raw_angle<-1700 && raw_angle>1700){
-				YAW_setpoint_acc += ((int32_t)3600)<<YAW_SPEED; 
+		deriv_setpoint = YAW_RATE * 0.005 * (float)raw_rc; //In deg/s
+		setpoint[axis] += deriv_setpoint*dt; 
+	}else{
+		//Special code to handle slow update rate of rc commands.
+		static int16_t last_rc[2] = {0,0};
+		static int32_t time_since_last[2] = {0,0};
+		static float last_setpoint[2] = {0.0,0.0};
+		static float last_deriv[2] = {0.0,0.0};
+		static float deriv_lpf[2] = {0.0,0.0};
+		float instant_deriv;
+		time_since_last[axis] += (int32_t)cycleTime;
+		if(last_rc[axis] == raw_rc){
+			//in microseconds
+			if(time_since_last[axis] > 25000L){ //If time longer than 25ms, assume remote stick is not moving. (Longer then RC update rate).
+				last_deriv[axis] = 0;
+				time_since_last[axis] = 25000L;
 			}
+			instant_deriv = last_deriv[axis];
+		}else{
+			float dt2 = ((float) time_since_last[axis])*0.000001; //In seconds
+			last_rc[axis] = raw_rc;
+			setpoint[axis] = TILT_ANGLE * 0.005 * (float)raw_rc;
+			instant_deriv = (setpoint[axis] - last_setpoint[axis])/dt2;
+			last_deriv[axis] = deriv_setpoint;
+			time_since_last[axis] = 0;
+			last_setpoint[axis] = setpoint[axis];
 		}
 
-		last_raw_angle = raw_angle;
-		pos_setpoint = YAW_setpoint_acc>>YAW_SPEED;
-	}else{
-		pos_setpoint = map(raw_rc,-200,200,-TILT_ANGLE,TILT_ANGLE);
+		deriv_lpf[axis] = 0.95*deriv_lpf[axis] + 0.05*instant_deriv;
+		deriv_setpoint = deriv_lpf[axis];
 	}
-
+	
 	//Get the position error
-	int32_t pos_error = raw_angle-pos_setpoint;
+    float pos_error = angle[axis] - setpoint[axis];
 
-	//Avoid YAW from spooling up multiple turns (setpoint kept within 90 deg of current pos)
-	int16_t diff=0;
-	if(axis == YAW && abs(pos_error)>YAW_MAX_ERROR){
-		
-		if(pos_error>0){
-			diff = pos_error - YAW_MAX_ERROR;
-		}else{
-			diff = YAW_MAX_ERROR - pos_error;
+	//Limit how far the yaw error is (avoids spooling)
+	if(axis == YAW){
+		if(abs(pos_error)>90.0){
+			float diff;
+			if(pos_error>0.0){
+				diff = pos_error-90.0;
+			}else{
+				diff = 90.0+pos_error;
+			}
+			pos_error -= diff;
+			setpoint[axis] += diff;
 		}
-
-		YAW_setpoint_acc += ((int32_t)diff)<<YAW_SPEED;
-		pos_error -= diff;
-		last_error[axis] -= diff; //To avoid glitch in derivative.
 	}
 
-	//Integrate the error
-	errorI[axis] += cycleTime * 0.000001 * pos_error;
-	if(axis==YAW){
-		errorI[axis] = constrain(errorI[axis],-YAW_MAX_I,YAW_MAX_I);
-	}else{
-		errorI[axis] = constrain(errorI[axis],-SWASH_MAX_I,SWASH_MAX_I);
+	//Get the error derivative
+	float vel_error = raw_gyro - deriv_setpoint;
+	
+	//PD terms
+	float P,D;
+	P = -(float)conf.pid[axis].P8 * pos_error;
+	D = -(float)conf.pid[axis].D8 * vel_error;
+
+	//Custom terms
+	if(axis==ROLL){
+		//D = -(float)K * vel_error;
+		P = -(float)K * pos_error;
 	}
 
-	//Get the derivative of the error
-	int32_t deriv = (((int32_t)(pos_error-last_error[axis]))<<14)/cycleTime;
-	last_error[axis] = pos_error;
-	D_error_lpf[axis] = DERIV_LPF*D_error_lpf[axis] + (1.0-DERIV_LPF)*deriv;
-	D_error_lpf[axis] = constrain(D_error_lpf[axis],-DERIV_MAX,DERIV_MAX);
+	//Apply low pass filter on the derivative term (match the servo response speed)
+	static float D_lpf[3] = {0,0,0};
+    #define d_lpf 0.93333
+	D_lpf[axis] = d_lpf * D_lpf[axis] + (1.0-d_lpf) * D;
 
-	//Final response and corrections
-	int16_t P,I,D;
-	switch (axis){
-	case PITCH:
-	case ROLL:
-		//Get the PID terms
-		P = mul(conf.pid[axis].P8,pos_error)>>9;
-		//I = ((int32_t)(conf.pid[axis].I8*errorI[axis]))>>9;
-		//P=mul(K,pos_error)>>9;
-		I=0;
-		//D=0;
-		D = ((int32_t)(conf.pid[axis].D8*D_error_lpf[axis]))>>4;
-		//D = ((int32_t)(K*D_error_lpf[axis]))>>4;
-		
-		if(throttleVal > 15){
-			axisPID[axis] = ((int32_t)200*(-P -I -D))/throttleVal; //As headspeed increases, the control effort is reduced due to amplified effect.
-			axisPID[axis] = SCALE_FACTOR*axisPID[axis];
-			if(throttleVal <25) axisPID[axis]/=2; //Avoids instability due to vibrations at low speed.
-			if(axis==ROLL) axisPID[axis] = ((float)axisPID[axis])*ROLL_RATIO;
-		}else{
-			axisPID[axis] = 0;
-			errorI[axis] = 0;
-		}
-
-		//axisPID[axis] = 0; //DISABLE SWASHPLATE
-		break;
-	case YAW:
-		//Get the PID terms
-		//P = 0;
-		I = 0;
-		//D = 0;
-		P = mul(conf.pid[axis].P8,pos_error)>>11;
-		//P = mul(K,pos_error)>>11;
-		//I = ((int32_t)(conf.pid[axis].I8*errorI[axis]))>>6;
-		D = ((int32_t)(conf.pid[axis].D8*D_error_lpf[axis]))>>3;
-		//D = ((int32_t)(K*D_error_lpf[axis]))>>3;
-
-		if(throttleVal > 25){
-			axisPID[axis] = -P -I -D;
+	//Final response output	
+	if(throttleVal > 20){
+		if(axis==YAW){
+			axisPID[axis] = 0.01 * (P + D_lpf[axis]);
 			axisPID[axis] += throttleVal; //Add an offset to the tail motor to follow main motor.
+			axisPID[axis] = constrain(axisPID[axis],0,MAXTAILMOTOR-TAIL_MIN_ARMED); //FOR THE YAW, axisPID RESPONSE OUTPUT IS FROM 0 to 265 UNTIL THE MOTOR SATURATES... 0 is minimum trust (still some so motor never stops), 265 is max trust (more then is needed).
 		}else{
-			axisPID[axis] = 0;
-			YAW_setpoint_acc = ((int32_t)raw_angle)<<YAW_SPEED;
-			errorI[axis] = 0;
+			axisPID[axis] = ((int16_t)(10.0*P + 2.5*D_lpf[axis]))/throttleVal; //As headspeed increases, the control effort is reduced due to amplified effect. Also, inversely proportional because of amplfied dynamics at higher range.
+			if(throttleVal <35) axisPID[axis]/=2; //Avoids instability due to vibrations at low speed.
+			if(axis==ROLL) axisPID[axis] = ((float)axisPID[axis])*ROLL_RATIO;
 		}
-
-		axisPID[axis] = constrain(axisPID[axis],0,MAXTAILMOTOR-TAIL_MIN_ARMED); //FOR THE YAW, axisPID RESPONSE OUTPUT IS FROM 0 to 265 UNTIL THE MOTOR SATURATES... 0 is minimum trust (still some so motor never stops), 265 is max trust (more then is needed).
-		break;
-	}	
+	}else{
+		axisPID[axis] = 0;
+		rc_trim[axis] = 0;
+		angle[axis] = 0;
+		setpoint[axis] = 0;
+	}
   }
 #else
   #error "*** you must set PID_CONTROLLER to one existing implementation"

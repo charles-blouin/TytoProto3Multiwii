@@ -86,7 +86,8 @@ uint8_t i2c_readNak();
   #define GYRO_SCALE ((4.0f * PI * 70.0f)/(1000.0f * 180.0f * 1000000.0f)) // 70 milli deg/s /digit => 1 deg/s = 1000/70 LSB
 #endif
 #if defined(MPU6050)
-  #define GYRO_SCALE (4 / 16.4 * PI / 180.0 / 1000000.0)   //MPU6050 and MPU3050   16.4 LSB = 1 deg/s
+  #define GYRO_SCALE (4.0 / 131.0 * PI / 180.0 / 1000000.0)   //MPU6050 and MPU3050   131 LSB = 1 deg/s
+  #define GYRO_ADC_SCALE (1.0 / 131.0)   //MPU6050 and MPU3050   131 LSB = 1 deg/s. In deg/s, reading gyroADC variable, instead of gyroData.
 #endif
 #if defined(LSM330)
   #define GYRO_SCALE ((4.0f * PI * 70.0f)/(1000.0f * 180.0f * 1000000.0f)) // like L3G4200D

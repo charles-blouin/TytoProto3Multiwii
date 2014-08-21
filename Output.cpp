@@ -1334,6 +1334,7 @@ void mixTable() {
    // Common controlls for Helicopters
     int16_t heliRoll,heliNick;
     int16_t collRange[3] = COLLECTIVE_RANGE;
+	//collRange[1] = map(rcData[AUX3],1000,2000,-250,250); debug[0] = collRange[1]; //Manually adjust zero pitch.
     static int16_t   collective;
     #ifdef GOVERNOR_P
       static int16_t last_collective = 0, delta_collective = 0, governorThrottle = 0;
@@ -1379,11 +1380,15 @@ void mixTable() {
     }
 
 	//HELI SWASH PLATE PHASE TUNING. Use PASSTHROUGH mode. Tune until a ROLL cyclic does not result into a PITCH moment, and vice versa.
-	//#define PHASE 30.6 //Swashplate phase shift in degrees. IMPORTANT TO TUNE BEFORE TUNING PID!!!
+	//int16_t MAPPED = map(rcData[AUX3],1000,2000,-500,500); debug[0]=MAPPED; //176
+	//#define PHASE MAPPED*0.1 //Swashplate phase shift in degrees. IMPORTANT TO TUNE BEFORE TUNING PID!!! 
+    //#define PHASE 17.6
     //float cos_phase = cos(PHASE*3.1415/180.0);
 	//float sin_phase = sin(PHASE*3.1415/180.0);
-    #define COS_PHASE 0.860742027 //HARDCODED FOR RUNNING SPEED
-    #define SIN_PHASE 0.509041416
+    #define cos_phase 0.95319067
+    #define sin_phase 0.30236989
+    #define COS_PHASE cos_phase //HARDCODED FOR RUNNING SPEED
+    #define SIN_PHASE sin_phase
 
 	//Swashplate phase rotation
 	float ROLL = heliRoll*COS_PHASE + heliNick*SIN_PHASE;

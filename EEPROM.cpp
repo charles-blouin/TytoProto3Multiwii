@@ -151,10 +151,10 @@ void LoadDefaults() {
       conf.pid[PIDLEVEL].P8 = 30; conf.pid[PIDLEVEL].I8 = 32; conf.pid[PIDLEVEL].D8 = 0;
 	  conf.pid[YAW].P8      = 68;  conf.pid[YAW].I8     = 45;  conf.pid[YAW].D8     = 0;
 	#elif PID_CONTROLLER == 3
-      conf.pid[ROLL].P8     = 157;  conf.pid[ROLL].I8    = 170; conf.pid[ROLL].D8     = 36;
-      conf.pid[PITCH].P8    = 157; conf.pid[PITCH].I8    = 170; conf.pid[PITCH].D8    = 36;
+      conf.pid[ROLL].P8     = 56;  conf.pid[ROLL].I8    = 0; conf.pid[ROLL].D8     = 46;
+      conf.pid[PITCH].P8    = 56; conf.pid[PITCH].I8    = 0; conf.pid[PITCH].D8    = 46;
       conf.pid[PIDLEVEL].P8 = 0; conf.pid[PIDLEVEL].I8 = 0; conf.pid[PIDLEVEL].D8 = 0;
-	  conf.pid[YAW].P8      = 84;  conf.pid[YAW].I8     = 0;  conf.pid[YAW].D8     = 38;
+	  conf.pid[YAW].P8      = 134;  conf.pid[YAW].I8     = 0;  conf.pid[YAW].D8     = 45;
     #endif
     conf.pid[PIDALT].P8   = 64; conf.pid[PIDALT].I8   = 25; conf.pid[PIDALT].D8   = 24;
 

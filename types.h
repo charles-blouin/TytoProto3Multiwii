@@ -86,7 +86,7 @@ typedef struct {
   int16_t  accSmooth[3];
   int16_t  gyroData[3];
   int16_t  magADC[3];
-  int16_t  gyroADC[3];
+  int32_t  gyroADC[3];
   int16_t  accADC[3];
 } imu_t;
 
@@ -104,7 +104,7 @@ typedef struct {
 } alt_t;
 
 typedef struct {
-  int16_t angle[3];            // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
+  int16_t angle[2];            // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
   int16_t heading;             // variometer in cm/s
 } att_t;
 

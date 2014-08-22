@@ -1363,23 +1363,22 @@ void loop () {
   }
 #elif PID_CONTROLLER == 3 // Flybarless controller, does not use the actual orientation, only the gyros at high precision (gyroADC, at full sensor sensitivity).
   //ADJUSTEMENT COEFF (from remote pot)
-  int K = map(rcData[AUX3],1000,2000,0,200);
-  debug[0]=K;
+  //int K = map(rcData[AUX3],1000,2000,0,200);
+  //debug[0]=K;
+
+//debug[0] = map(rcData[AUX3],1000,2000,-200,200);
 
   //*** Adjustable parameters ***
   //Also PID coefficients for ROLL, PITCH, YAW
-  #define RC_TRIM_SPEED 10 //A shifted value, ie, lower val is faster. For auto trimming.
-  //#define YAW_SPEED 7 //A shifted value, ie, lower val is faster yaw speed (from remote)
+  #define RC_TRIM_SPEED 11 //A shifted value, ie, lower val is faster. For auto trimming.
   #define TILT_ANGLE 30.0 //Max tilt at full cyclic in degrees
-  //#define DERIV_LPF 0.0 //For the lpf of the derivative
-  //#define DERIV_MAX 20.0 //Limits the derivative amplitude
   #define YAW_RC_DEADBAND 15
   #define YAW_RATE 25.0 //Yaw turn rate in deg/s 
-  //#define YAW_MAX_ERROR 1800 //To avoid error accumulating over more than one turn
-  //#define YAW_MAX_I 200.0
-  //#define SWASH_MAX_I 50.0
+  #define MAX_SWASH 300 //Maximum control effort allowed
   #define ROLL_RATIO (((float)180)*0.002) //(K/256) //From 0 to 1. Take into account different ROLL, PITCH...
-  //#define SCALE_FACTOR 2.0 //(K/256) //From 0 to 1. For development purposes only...
+  #define BIAS_RATE 0.999
+  #define DRIFT_CORRECTION 0.995
+  #define SCALE_FACTOR (0.0078125*(float)200) //From 0 to 1. For development purposes only...
 
   //*** Main flybarless controller code ***
   int16_t throttleVal = max((servo[7] - MINTHROTTLE)>>2,0); //up to about 160;
@@ -1390,17 +1389,29 @@ void loop () {
 
 	//Get raw variables
 	float raw_gyro = (float)imu.gyroADC[axis]*GYRO_ADC_SCALE; //In deg/s.
+	float raw_angle = 0.1*((float)att.angle[axis]); //In degrees, use only for drift correction, as low resolution.
 	int16_t raw_rc = rcCommand[axis]; //Approx +-200 in range.
 	float dt = ((float) cycleTime)*0.000001; //In seconds
 
+	//Remove the drift using the multiwii's own IMU angle estimation
+	static float gyro_bias[4] = {0.0,0.0,0.0,0.0}; //Second order low pass filter
+	if(axis != YAW){
+		if(abs(raw_gyro)<10.0){
+			gyro_bias[axis] = BIAS_RATE * gyro_bias[axis] + (1.0-BIAS_RATE) * raw_gyro;
+			gyro_bias[axis+2] = BIAS_RATE * gyro_bias[axis+2] + (1.0-BIAS_RATE) * gyro_bias[axis];
+		}
+		raw_gyro -= gyro_bias[axis+2];
+		angle[axis] = DRIFT_CORRECTION * angle[axis] + (1.0-DRIFT_CORRECTION) * raw_angle;
+	}
+	
 	//Integrate to get the angle
 	angle[axis] += raw_gyro*dt; //Integrated angle in degrees.
 
 	//Trim the roll/pitch remote
-	/*if(axis!=YAW){
+	if(axis!=YAW){
 		if(abs(raw_rc)>3) rc_trim[axis] += raw_rc;
 		raw_rc += rc_trim[axis]>>RC_TRIM_SPEED;
-	}*/
+	}
 
 	//Get position setpoint
     //For YAW, the angle setpoint changes proportionally at a speed with RC yaw.
@@ -1467,7 +1478,7 @@ void loop () {
 	//Custom terms
 	if(axis==ROLL){
 		//D = -(float)K * vel_error;
-		P = -(float)K * pos_error;
+		//P = -(float)K * pos_error;
 	}
 
 	//Apply low pass filter on the derivative term (match the servo response speed)
@@ -1482,15 +1493,16 @@ void loop () {
 			axisPID[axis] += throttleVal; //Add an offset to the tail motor to follow main motor.
 			axisPID[axis] = constrain(axisPID[axis],0,MAXTAILMOTOR-TAIL_MIN_ARMED); //FOR THE YAW, axisPID RESPONSE OUTPUT IS FROM 0 to 265 UNTIL THE MOTOR SATURATES... 0 is minimum trust (still some so motor never stops), 265 is max trust (more then is needed).
 		}else{
-			axisPID[axis] = ((int16_t)(10.0*P + 2.5*D_lpf[axis]))/throttleVal; //As headspeed increases, the control effort is reduced due to amplified effect. Also, inversely proportional because of amplfied dynamics at higher range.
+			axisPID[axis] = ((int32_t)(SCALE_FACTOR*(10.0*P + 2.5*D_lpf[axis])))/throttleVal; //As headspeed increases, the control effort is reduced due to amplified effect. Also, inversely proportional because of amplfied dynamics at higher range.
+			axisPID[axis] = constrain(axisPID[axis],-MAX_SWASH,MAX_SWASH);
 			if(throttleVal <35) axisPID[axis]/=2; //Avoids instability due to vibrations at low speed.
 			if(axis==ROLL) axisPID[axis] = ((float)axisPID[axis])*ROLL_RATIO;
 		}
 	}else{
 		axisPID[axis] = 0;
-		rc_trim[axis] = 0;
-		angle[axis] = 0;
-		setpoint[axis] = 0;
+		//rc_trim[axis] = 0;
+		//angle[axis] = 0;
+		setpoint[axis] = angle[axis];
 	}
   }
 #else

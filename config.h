@@ -317,8 +317,9 @@
     #define COLLECTIVE_PITCH      THROTTLE
 
     /* Limit the range of Collective Pitch. 100% is Full Range each way and position for Zero Pitch */
-    #define COLLECTIVE_RANGE { 0, -100, 0 }// {Min%, ZeroPitch offset from 1500, Max%}. USE DEFINE in output.cpp to tune.
-    #define YAWMOTOR                 1       // If a motor is used as YAW Set to 1 else set to 0.
+    //#define COLLECTIVE_RANGE { 0, -150+map(rcData[AUX3],1000,2000,-200,200), 0 }// {Min%, ZeroPitch offset from 1500, Max%}.
+    #define COLLECTIVE_RANGE { 0, -150+21, 0 }// {Min%, ZeroPitch offset from 1500, Max%}.
+	#define YAWMOTOR                 1       // If a motor is used as YAW Set to 1 else set to 0.
 
     /* Servo mixing for heli 120
                          {Coll,Nick,Roll} */

@@ -359,7 +359,7 @@ void GYRO_Common() {
     imu.gyroADC[axis] = mediaMobileGyroADCSum[axis] / conf.mmgyro;
 #else 
   for (axis = 0; axis < 3; axis++) {
-    imu.gyroADC[axis]  -= gyroZero[axis];
+    //imu.gyroADC[axis]  -= gyroZero[axis];
     //anti gyro glitch, limit the variation between two consecutive readings
     //imu.gyroADC[axis] = constrain(imu.gyroADC[axis],previousGyroADC[axis]-800,previousGyroADC[axis]+800);
 #endif    

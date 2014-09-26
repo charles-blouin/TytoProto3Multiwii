@@ -160,7 +160,9 @@
       //#define Nano_Plane         // Multiwii Plane version with tail-front LSM330 sensor http://www.radiosait.ru/en/page_5324.html
       
     /***************************    independent sensors    ********************************/
-      /* leave it commented if you already checked a specific board above */
+      
+#define MAIN_MOTOR_TEMP //Activate if using the analog temp sensor for the main motor.
+	  /* leave it commented if you already checked a specific board above */
       /* I2C gyroscope */
       //#define WMP
       //#define ITG3200

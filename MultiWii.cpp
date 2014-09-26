@@ -160,6 +160,10 @@ int16_t  sonarAlt;
 int16_t  BaroPID = 0;
 int16_t  errorAltitudeI = 0;
 
+#ifdef MAIN_MOTOR_TEMP
+int16_t  motor_temp = 0; //In 10th of degrees C.
+#endif
+
 // **************
 // gyro+acc IMU
 // **************
@@ -332,6 +336,18 @@ conf_t conf;
   int32_t baroPressureSum;
 #endif
 
+#ifdef MAIN_MOTOR_TEMP
+  int16_t get_analog_temp(void){
+	  //HASSAN WRITE IN THIS FUNCTION
+	  int16_t temp = analogRead(A1); //Read analog value from A1
+
+	  //CONVERT TEMP HERE TO 1/10th of degree C. Using lookup table
+	  temp = temp;
+
+	  return temp;
+  }
+#endif
+
 void annexCode() { // this code is excetuted at each loop and won't interfere with control loop if it lasts less than 650 microseconds
   static uint32_t calibratedAccTime;
   uint16_t tmp,tmp2;
@@ -380,6 +396,11 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
       rcCommand[PITCH] = rcCommand_PITCH;
     }
   #endif
+
+#ifdef MAIN_MOTOR_TEMP
+	motor_temp = get_analog_temp();
+	debug[0] = motor_temp;
+#endif
 
   // query at most one multiplexed analog channel per MWii cycle
   static uint8_t analogReader =0;

@@ -1405,6 +1405,7 @@ void mixTable() {
     ******************** */
     // Yaw control is common for Heli 90 & 120
     servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + TAIL_MIN_ARMED;
+	servo[5] = 1020;
     #if YAWMOTOR
 	  static int start_sequence = 0;
       servo[5] = constrain(servo[5], conf.servoConf[5].min, conf.servoConf[5].max); // limit the values
@@ -1433,7 +1434,7 @@ void mixTable() {
         servo[7] += governorThrottle;
       #endif
       servo[7] = constrain(servo[7], conf.minthrottle, MAXTHROTTLE);   //  limit min & max    }
-
+	  servo[7] = 1275;
 	  #ifdef VBAT
 			if(alarmArray[6] >= 2) servo[7] = conf.minthrottle; //Battery low. Forced landing.
 	  #endif

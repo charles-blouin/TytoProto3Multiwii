@@ -31,6 +31,8 @@
 /*****************                                                                 ***************/
 /*************************************************************************************************/
 
+#define TEST_JIG_TRUST //In trust test jig mode
+
   /**************************    The type of multicopter    ****************************/
     //#define GIMBAL
     //#define BI
@@ -160,8 +162,12 @@
       //#define Nano_Plane         // Multiwii Plane version with tail-front LSM330 sensor http://www.radiosait.ru/en/page_5324.html
       
     /***************************    independent sensors    ********************************/
-      
-#define MAIN_MOTOR_TEMP //Activate if using the analog temp sensor for the main motor.
+
+#ifdef TEST_JIG_TRUST
+	#define MAIN_MOTOR_TEMP //Activate if using the analog temp sensor for the main motor.
+    #define RPM_SENSOR
+#endif
+
 	  /* leave it commented if you already checked a specific board above */
       /* I2C gyroscope */
       //#define WMP
@@ -321,7 +327,7 @@
     /* Limit the range of Collective Pitch. 100% is Full Range each way and position for Zero Pitch */
     //#define COLLECTIVE_RANGE { 0, -150+map(rcData[AUX3],1000,2000,-200,200), 0 }// {Min%, ZeroPitch offset from 1500, Max%}.
     #define COLLECTIVE_RANGE { 0, -150+21, 0 }// {Min%, ZeroPitch offset from 1500, Max%}.
-	#define YAWMOTOR                 1       // If a motor is used as YAW Set to 1 else set to 0.
+	#define YAWMOTOR                 0       // If a motor is used as YAW Set to 1 else set to 0.
 
     /* Servo mixing for heli 120
                          {Coll,Nick,Roll} */

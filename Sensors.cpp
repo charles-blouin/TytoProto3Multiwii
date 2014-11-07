@@ -1728,5 +1728,6 @@ void initSensors() {
   if (MAG) Mag_init();
   if (ACC) ACC_init();
   if (SONAR) Sonar_init();
+
   f.I2C_INIT_DONE = 1;
 }

@@ -45,6 +45,7 @@ void rxInt(void);
 /**************************************************************************************/
 void configureReceiver() {
   /******************    Configure each rc pin for PCINT    ***************************/
+
   #if defined(STANDARD_RX)
     #if defined(MEGA)
       DDRK = 0;  // defined PORTK as a digital port ([A8-A15] are consired as digital PINs and not analogical)
@@ -56,6 +57,11 @@ void configureReceiver() {
     }
     PCICR = PCIR_PORT_BIT;
     
+	#ifdef RPM_SENSOR
+	PORTB &= ~(1<<2); //input for the RPM sensor
+	debug[3] = 123;
+	#endif
+
     /*************    atmega328P's Specific Aux2 Pin Setup    *********************/
     #if defined(PROMINI)
      #if defined(RCAUXPIN)
@@ -148,6 +154,7 @@ void configureReceiver() {
     uint8_t mask;
     uint8_t pin;
     uint16_t cTime,dTime;
+	static unsigned long rpm_last_micros;
     static uint16_t edgeTime[8];
     static uint8_t PCintLast;
   #if defined(FAILSAFE) && !defined(PROMICRO)
@@ -160,8 +167,26 @@ void configureReceiver() {
     cTime = micros();         // micros() return a uint32_t, but it is not usefull to keep the whole bits => we keep only 16 bits
     sei();                    // re enable other interrupts at this point, the rest of this interrupt is not so time critical and can be interrupted safely
     PCintLast = pin;          // we memorize the current state of all PINs [D0-D7]
-  
-    #if (PCINT_PIN_COUNT > 0)
+
+#ifdef RPM_SENSOR
+	if (mask & 1<<2) {   
+	//RPM sensor should work between 500 and 5000 rpm, so 120ms to 12ms per turn. So between 12000 and 120000 microseconds.
+      /*if (!(pin & PCInt_RX_Pins[pin_pos])) {                         
+        dTime = cTime-edgeTime[pin_pos];                             
+        if (900<dTime && dTime<2200) {                               
+          rcValue[rc_value_pos] = dTime;                            
+        }                                                            
+      } else edgeTime[pin_pos] = cTime; */
+		if(pin & (1<<2)) { //ONE MOTOR TURN
+			unsigned long current_time = micros();
+			unsigned long time_since_last = current_time-rpm_last_micros;
+			rpm_last_micros = current_time;
+			jig_data.MainMotor_rpm = 60000000UL/time_since_last;
+			rpm_zero_detect = 0;
+		}
+    }
+#else
+	#if (PCINT_PIN_COUNT > 0)
       RX_PIN_CHECK(0,2);
     #endif
     #if (PCINT_PIN_COUNT > 1)
@@ -192,6 +217,7 @@ void configureReceiver() {
         if(failsafeCnt > 20) failsafeCnt -= 20; else failsafeCnt = 0; 
       }
     #endif
+#endif
   }
   /*********************      atmega328P's Aux2 Pins      *************************/
   #if defined(PROMINI)

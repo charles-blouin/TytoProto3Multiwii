@@ -160,6 +160,11 @@ int16_t  sonarAlt;
 int16_t  BaroPID = 0;
 int16_t  errorAltitudeI = 0;
 
+#ifdef TEST_JIG_TRUST
+test_jig_data_t jig_data;
+int16_t rpm_zero_detect = 0;
+#endif
+
 #ifdef MAIN_MOTOR_TEMP
 int16_t  motor_temp = 0; //In 10th of degrees C.
 #endif
@@ -397,9 +402,15 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
     }
   #endif
 
+#ifdef TEST_JIG_TRUST
+	if(rpm_zero_detect++>200){
+		rpm_zero_detect = 200;
+		jig_data.MainMotor_rpm = 0; //Sets rpm to 0 automatically after certain period
+	}
+#endif
+
 #ifdef MAIN_MOTOR_TEMP
-	motor_temp = get_analog_temp();
-	debug[0] = motor_temp;
+	jig_data.MainMotor_temp = get_analog_temp();
 #endif
 
   // query at most one multiplexed analog channel per MWii cycle

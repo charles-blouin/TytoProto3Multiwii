@@ -82,6 +82,15 @@ enum box {
   CHECKBOXITEMS
 };
 
+#ifdef TEST_JIG_TRUST
+typedef struct {
+  int16_t  MainMotor_rpm;
+  int16_t  MainMotor_temp;
+  int16_t  MainMotor_current;
+  int16_t  Torque_scale;
+} test_jig_data_t;
+#endif
+
 typedef struct {
   int16_t  accSmooth[3];
   int16_t  gyroData[3];

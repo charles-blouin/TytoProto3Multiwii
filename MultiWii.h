@@ -56,6 +56,11 @@ extern att_t att;
 extern plog_t plog;
 #endif
 
+#ifdef TEST_JIG_TRUST
+	extern test_jig_data_t jig_data;
+	extern int16_t rpm_zero_detect;
+#endif
+
 extern int16_t debug[4];
 
 extern conf_t conf;

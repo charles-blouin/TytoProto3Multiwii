@@ -59,7 +59,6 @@ void configureReceiver() {
     
 	#ifdef RPM_SENSOR
 	PORTB &= ~(1<<2); //input for the RPM sensor
-	debug[3] = 123;
 	#endif
 
     /*************    atmega328P's Specific Aux2 Pin Setup    *********************/

@@ -166,6 +166,8 @@
 #ifdef TEST_JIG_TRUST
 	#define MAIN_MOTOR_TEMP //Activate if using the analog temp sensor for the main motor.
     #define RPM_SENSOR
+    #define TORQUE_SENSOR //A scale connected to the tail
+    #define MAIN_MOTOR_CURRENT
 #endif
 
 	  /* leave it commented if you already checked a specific board above */

@@ -344,13 +344,48 @@ conf_t conf;
 #ifdef MAIN_MOTOR_TEMP
   int16_t get_analog_temp(void){
 	  //HASSAN WRITE IN THIS FUNCTION
-	  int16_t temp = analogRead(A1); //Read analog value from A1
+	  int16_t givenValue = analogRead(A1); //Read analog value from A1
 
 	  //CONVERT TEMP HERE TO 1/10th of degree C. Using lookup table
-	  temp = temp;
+	  //temp = temp66;
 
-	  return temp;
-  }
+    int tempGiven [] ={491, 584, 674,761,823,870,907,937,955};
+    int tempCel [] = {210,310,410,510,610,700,800,900,980};
+    int temp = 0;
+
+    bool cond = true;
+
+    for(int index = 0;((index < 8) && (cond == true));index++)
+
+    {
+
+        if(givenValue ==tempGiven[index])
+
+        {
+            temp = tempCel[index];
+            cond = false;
+        }
+        else if (givenValue <tempGiven[index] && index ==0)
+        {
+            temp = ((tempCel[index+1] - tempCel[index])/(tempGiven[index+1] - tempGiven[index]))*givenValue + (((tempGiven[index+1]*tempCel[index])-(tempGiven[index] * tempCel[index +1]))/(tempGiven[index+1] - tempGiven[index]));
+            cond = false;
+        }            
+        else if(givenValue <tempGiven[index])
+        {            
+            temp = ((tempCel[index] - tempCel[index-1])/(tempGiven[index] - tempGiven[index-1]))*givenValue + (((tempGiven[index]*tempCel[index-1])-(tempGiven[index-1] * tempCel[index]))/(tempGiven[index] - tempGiven[index-1]));
+            cond = false;
+        }         
+        if (givenValue > tempGiven[8])
+        {
+            temp= ((tempCel[8] - tempCel[7])/(tempGiven[8] - tempGiven[7]))*givenValue + (((tempGiven[8]*tempCel[7]) - (tempGiven[7] * tempCel[8]))/(tempGiven[8] - tempGiven[7]));
+            cond = false;
+        }
+
+    return temp;
+
+   }
+
+
 #endif
 
 void annexCode() { // this code is excetuted at each loop and won't interfere with control loop if it lasts less than 650 microseconds

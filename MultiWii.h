@@ -57,7 +57,7 @@ extern plog_t plog;
 #endif
 
 #ifdef TEST_JIG_TRUST
-	extern test_jig_data_t jig_data;
+	extern main_motor_data_t main_motor_data;
 	extern int16_t rpm_zero_detect;
 #endif
 

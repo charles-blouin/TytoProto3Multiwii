@@ -180,7 +180,7 @@ void configureReceiver() {
 			unsigned long current_time = micros();
 			unsigned long time_since_last = current_time-rpm_last_micros;
 			rpm_last_micros = current_time;
-			jig_data.MainMotor_rpm = 60000000UL/time_since_last;
+			main_motor_data.MainMotor_rpm = 60000000UL/time_since_last;
 			rpm_zero_detect = 0;
 		}
     }

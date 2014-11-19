@@ -161,7 +161,7 @@ int16_t  BaroPID = 0;
 int16_t  errorAltitudeI = 0;
 
 #ifdef TEST_JIG_TRUST
-test_jig_data_t jig_data;
+main_motor_data_t main_motor_data;
 int16_t rpm_zero_detect = 0;
 #endif
 
@@ -341,36 +341,11 @@ int16_t baroTemperature;
 int32_t baroPressureSum;
 #endif
 
-#ifdef TORQUE_SENSOR
-int16_t get_torque(void){
-	int16_t scale_reading = analogRead(A0); //Read analog value from A1
-
-	//TODO
-
-
-	return 0;
-}
-
-#endif
-
-#ifdef MAIN_MOTOR_CURRENT
-int16_t get_main_current(void){
-	int16_t scale_reading = analogRead(A2); //Read analog value from A1
-
-	//TODO
-
-
-	return 0;
-}
-
-#endif
-
 #ifdef MAIN_MOTOR_TEMP
 int16_t get_analog_temp(void){
 	int16_t givenValue = analogRead(A1); //Read analog value from A1
 
 	//CONVERT TEMP HERE TO 1/10th of degree C. Using lookup table
-	//temp = temp66;
 
 	int tempGiven [] ={491, 584, 674,761,823,870,907,937,955};
 	int tempCel [] = {210,310,410,510,610,700,800,900,980};
@@ -378,35 +353,22 @@ int16_t get_analog_temp(void){
 
 	bool cond = true;
 
-	for(int index = 0;((index < 8) && (cond == true));index++)
-
-	{
-
-		if(givenValue ==tempGiven[index])
-
-		{
+	for(int index = 0;((index < 8) && (cond == true));index++){
+		if(givenValue ==tempGiven[index]){
 			temp = tempCel[index];
 			cond = false;
-		}
-		else if (givenValue <tempGiven[index] && index ==0)
-		{
+		}else if (givenValue <tempGiven[index] && index ==0){
 			temp = ((tempCel[index+1] - tempCel[index])/(tempGiven[index+1] - tempGiven[index]))*givenValue + (((tempGiven[index+1]*tempCel[index])-(tempGiven[index] * tempCel[index +1]))/(tempGiven[index+1] - tempGiven[index]));
 			cond = false;
-		}            
-		else if(givenValue <tempGiven[index])
-		{            
+		}else if(givenValue <tempGiven[index]){            
 			temp = ((tempCel[index] - tempCel[index-1])/(tempGiven[index] - tempGiven[index-1]))*givenValue + (((tempGiven[index]*tempCel[index-1])-(tempGiven[index-1] * tempCel[index]))/(tempGiven[index] - tempGiven[index-1]));
 			cond = false;
-		}         
-		if (givenValue > tempGiven[8])
-		{
+		}if (givenValue > tempGiven[8]){
 			temp= ((tempCel[8] - tempCel[7])/(tempGiven[8] - tempGiven[7]))*givenValue + (((tempGiven[8]*tempCel[7]) - (tempGiven[7] * tempCel[8]))/(tempGiven[8] - tempGiven[7]));
 			cond = false;
 		}
-
-		return temp;
-
 	}
+	return 	temp;
 }
 
 #endif
@@ -463,18 +425,14 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
 #ifdef RPM_SENSOR
 	if(rpm_zero_detect++>200){
 		rpm_zero_detect = 200;
-		jig_data.MainMotor_rpm = 0; //Sets rpm to 0 automatically after certain period
+		main_motor_data.MainMotor_rpm = 0; //Sets rpm to 0 automatically after certain period
 	}
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-	jig_data.MainMotor_temp = get_analog_temp();
+	main_motor_data.MainMotor_temp = get_analog_temp();
 	debug[0]=get_analog_temp();
 	debug[1]=analogRead(A1);
-#endif
-
-#ifdef TORQUE_SENSOR
-	jig_data.Torque_scale = get_torque();
 #endif
 
 	// query at most one multiplexed analog channel per MWii cycle

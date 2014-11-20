@@ -15,56 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TytoProto3Multiwii.ino" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Visual Micro\.TytoProto3Multiwii.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Alarms.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EEPROM.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GPS.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IMU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LCD.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MultiWii.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Output.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Protocol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RX.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sensors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Serial.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="def.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="Alarms.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -98,5 +48,61 @@
     <ClCompile Include="Serial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OneWire.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Alarms.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="def.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EEPROM.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GPS.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMU.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LCD.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MultiWii.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Output.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RX.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sensors.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Serial.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Visual Micro\.TytoProto3Multiwii.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OneWire.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TytoProto3Multiwii.ino" />
   </ItemGroup>
 </Project>

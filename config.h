@@ -164,7 +164,7 @@
     /***************************    independent sensors    ********************************/
 
 #ifdef TEST_JIG_TRUST
-	#define MAIN_MOTOR_TEMP //Activate if using the analog temp sensor for the main motor.
+	#define MAIN_MOTOR_TEMP //Activate if using the digital temp sensor for the main motor.
     #define RPM_SENSOR
     #define TORQUE_SENSOR //A scale connected to the tail
     #define MAIN_MOTOR_CURRENT

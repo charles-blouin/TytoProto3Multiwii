@@ -25,6 +25,7 @@ any later version. see <http://www.gnu.org/licenses/>
 #include "Serial.h"
 #include "GPS.h"
 #include "Protocol.h"
+#include "OneWire.h" //For the DS18S20 Temperature chip
 
 #include <avr/pgmspace.h>
 
@@ -166,7 +167,7 @@ int16_t rpm_zero_detect = 0;
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-int16_t  motor_temp = 0; //In 10th of degrees C.
+OneWire  ds(13);  // temp sensor on pin 13
 #endif
 
 // **************
@@ -342,33 +343,67 @@ int32_t baroPressureSum;
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-int16_t get_analog_temp(void){
-	int16_t givenValue = analogRead(A1); //Read analog value from A1
+int16_t get_digital_temp(void){
+  static int16_t last_valid_temp = 0;
+  static int8_t loop_state = 0;
+  static int32_t delay_wait_us = 0;
+  static int HighByte, LowByte, TReading, SignBit, Tc_100, Whole, Fract; //For interpreting hex to a temp
+  static byte i;
+  static byte present = 0;
+  static byte data[12];
+  static byte addr[8];
 
-	//CONVERT TEMP HERE TO 1/10th of degree C. Using lookup table
-
-	int tempGiven [] ={491, 584, 674,761,823,870,907,937,955};
-	int tempCel [] = {210,310,410,510,610,700,800,900,980};
-	int temp = 0;
-
-	bool cond = true;
-
-	for(int index = 0;((index < 8) && (cond == true));index++){
-		if(givenValue ==tempGiven[index]){
-			temp = tempCel[index];
-			cond = false;
-		}else if (givenValue <tempGiven[index] && index ==0){
-			temp = ((tempCel[index+1] - tempCel[index])/(tempGiven[index+1] - tempGiven[index]))*givenValue + (((tempGiven[index+1]*tempCel[index])-(tempGiven[index] * tempCel[index +1]))/(tempGiven[index+1] - tempGiven[index]));
-			cond = false;
-		}else if(givenValue <tempGiven[index]){            
-			temp = ((tempCel[index] - tempCel[index-1])/(tempGiven[index] - tempGiven[index-1]))*givenValue + (((tempGiven[index]*tempCel[index-1])-(tempGiven[index-1] * tempCel[index]))/(tempGiven[index] - tempGiven[index-1]));
-			cond = false;
-		}if (givenValue > tempGiven[8]){
-			temp= ((tempCel[8] - tempCel[7])/(tempGiven[8] - tempGiven[7]))*givenValue + (((tempGiven[8]*tempCel[7]) - (tempGiven[7] * tempCel[8]))/(tempGiven[8] - tempGiven[7]));
-			cond = false;
-		}
-	}
-	return 	temp;
+  delay_wait_us-=cycleTime;
+  if(delay_wait_us<=0){
+	  delay_wait_us=0;
+	  switch(loop_state){
+	  case 0:
+		  if ( !ds.search(addr)) {
+			 ds.reset_search();
+			 delay_wait_us = 250000;
+		  }else{
+			loop_state++;
+		  }
+		  break;
+	  case 1:
+		  if ( OneWire::crc8( addr, 7) != addr[7]) {
+			loop_state = 0;
+		  }else{
+			loop_state++;
+		  }
+		  break;
+	  case 2:
+		  if ( addr[0] != 0x28) {
+			loop_state = 0;
+		  }else{
+			loop_state++;
+		  }
+		  break;
+	  case 3:
+		  ds.reset();
+		  ds.select(addr);
+          ds.write(0x44,1);         // start conversion, with parasite power on at the end
+          delay_wait_us = 1000000;     // maybe 750ms is enough, maybe not
+		  loop_state++;
+		  break;
+	  case 4:
+		  present = ds.reset();
+		  ds.select(addr);    
+		  ds.write(0xBE);         // Read Scratchpad
+		  for ( i = 0; i < 9; i++) {           // we need 9 bytes
+			data[i] = ds.read();
+		  }
+  
+		  //Convert HEX to deg C
+		  LowByte = data[0];
+		  HighByte = data[1];
+		  TReading = (HighByte << 8) + LowByte;
+		  last_valid_temp = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+		  loop_state = 0;
+		  break;
+	  }
+  }
+  return last_valid_temp;
 }
 
 #endif
@@ -430,9 +465,7 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-	main_motor_data.MainMotor_temp = get_analog_temp();
-	debug[0]=get_analog_temp();
-	debug[1]=analogRead(A1);
+	main_motor_data.MainMotor_temp = get_digital_temp();
 #endif
 
 	// query at most one multiplexed analog channel per MWii cycle
@@ -755,7 +788,6 @@ void setup() {
 	plog.armed_time = 0;   // lifetime in seconds
 	//plog.running = 0;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
 #endif
-
 	debugmsg_append_str("initialization completed\n");
 }
 

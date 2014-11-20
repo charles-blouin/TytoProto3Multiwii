@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TytoProto3Multiwii", "TytoProto3Multiwii.vcxproj", "{95CC703E-F294-4E4C-8378-24F11926BFFD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TytoProto3Multiwii", "TytoProto3Multiwii.vcxproj", "{7CE37754-1E6A-47DB-9727-ED532CAE988F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +9,10 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{95CC703E-F294-4E4C-8378-24F11926BFFD}.Debug|Win32.ActiveCfg = Debug|Win32
-		{95CC703E-F294-4E4C-8378-24F11926BFFD}.Debug|Win32.Build.0 = Debug|Win32
-		{95CC703E-F294-4E4C-8378-24F11926BFFD}.Release|Win32.ActiveCfg = Release|Win32
-		{95CC703E-F294-4E4C-8378-24F11926BFFD}.Release|Win32.Build.0 = Release|Win32
+		{7CE37754-1E6A-47DB-9727-ED532CAE988F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7CE37754-1E6A-47DB-9727-ED532CAE988F}.Debug|Win32.Build.0 = Debug|Win32
+		{7CE37754-1E6A-47DB-9727-ED532CAE988F}.Release|Win32.ActiveCfg = Release|Win32
+		{7CE37754-1E6A-47DB-9727-ED532CAE988F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

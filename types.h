@@ -86,6 +86,7 @@ enum box {
 typedef struct {
   int16_t  MainMotor_rpm;
   int16_t  MainMotor_temp;
+  int16_t  Room_temp;
 } main_motor_data_t;
 #endif
 

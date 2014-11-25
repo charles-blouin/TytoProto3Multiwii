@@ -343,15 +343,19 @@ int32_t baroPressureSum;
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-int16_t get_digital_temp(void){
-  static int16_t last_valid_temp = 0;
+
+int16_t get_digital_temp(int sensor){
+  static int16_t last_valid_temp[2] = {0, 0};
+  static int current_sensor = 0;
   static int8_t loop_state = 0;
   static int32_t delay_wait_us = 0;
   static int HighByte, LowByte, TReading, SignBit, Tc_100, Whole, Fract; //For interpreting hex to a temp
   static byte i;
   static byte present = 0;
   static byte data[12];
-  static byte addr[8];
+  static byte addr[8]; 
+  const byte adress_ambient[8] = {0x28,0xDF,0xAF,0xD3,0x05,0x00,0x00,0x1E};
+  static byte adress_motor[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00}; //adress automatically determined
 
   delay_wait_us-=cycleTime;
   if(delay_wait_us<=0){
@@ -376,19 +380,37 @@ int16_t get_digital_temp(void){
 		  if ( addr[0] != 0x28) {
 			loop_state = 0;
 		  }else{
+			  current_sensor = 0; //Assume ambient sensor
+			  for ( i = 1; i < 8; i++) { //Check that we have the ambient sensor
+				  if(addr[i] != adress_ambient[i]) current_sensor = 1;
+			  }
+			  if(current_sensor == 1){
+				//Record the adress of the motor sensor
+				for ( i = 0; i < 8; i++) { //Check that we have the ambient sensor
+				  adress_motor[i] = addr[i];
+				}
+			  }
 			loop_state++;
 		  }
 		  break;
 	  case 3:
 		  ds.reset();
-		  ds.select(addr);
+		  if(current_sensor == 0){
+			  ds.select(adress_ambient);
+		  }else{
+			  ds.select(adress_motor);
+		  }
           ds.write(0x44,1);         // start conversion, with parasite power on at the end
           delay_wait_us = 1000000;     // maybe 750ms is enough, maybe not
 		  loop_state++;
 		  break;
 	  case 4:
 		  present = ds.reset();
-		  ds.select(addr);    
+		  if(current_sensor == 0){
+			  ds.select(adress_ambient);
+		  }else{
+			  ds.select(adress_motor);
+		  }   
 		  ds.write(0xBE);         // Read Scratchpad
 		  for ( i = 0; i < 9; i++) {           // we need 9 bytes
 			data[i] = ds.read();
@@ -398,12 +420,19 @@ int16_t get_digital_temp(void){
 		  LowByte = data[0];
 		  HighByte = data[1];
 		  TReading = (HighByte << 8) + LowByte;
-		  last_valid_temp = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
-		  loop_state = 0;
+		  last_valid_temp[current_sensor] = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+
+		  if(adress_motor[0]==0){ //Motor temp sensor not found yet
+			loop_state = 0;
+		  }else{
+			loop_state = 3;
+			current_sensor = 1 - current_sensor; //Select the other sensor
+		  }
 		  break;
 	  }
   }
-  return last_valid_temp;
+  return last_valid_temp[sensor];
+return 0;
 }
 
 #endif
@@ -465,7 +494,8 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
 #endif
 
 #ifdef MAIN_MOTOR_TEMP
-	main_motor_data.MainMotor_temp = get_digital_temp();
+	main_motor_data.MainMotor_temp = get_digital_temp(1);
+	main_motor_data.Room_temp = get_digital_temp(0);
 #endif
 
 	// query at most one multiplexed analog channel per MWii cycle

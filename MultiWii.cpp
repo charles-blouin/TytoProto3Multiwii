@@ -400,7 +400,7 @@ int16_t get_digital_temp(int sensor){
 		  }else{
 			  ds.select(adress_motor);
 		  }
-          ds.write(0x44,1);         // start conversion, with parasite power on at the end
+          ds.write(0x44,0);         // start conversion, with parasite power off at the end
           delay_wait_us = 1000000;     // maybe 750ms is enough, maybe not
 		  loop_state++;
 		  break;

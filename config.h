@@ -858,7 +858,7 @@
        must be associated with #define BUZZER ! */
 
 //We use 2S lipo battery. FULL is 8.4V, Nominal is 7.4V, Empty is 6.4V.
-    #define VBAT              // uncomment this line to activate the vbat code
+    //#define VBAT              // uncomment this line to activate the vbat code
     #define VBATSCALE       196 // (*) (**) change this value if readed Battery voltage is different than real voltage
     #define VBATNOMINAL     74 // 7,4V full battery nominal voltage - only used for lcd.telemetry
     #define VBATLEVEL_WARN1 70 // (*) (**) 10,7V

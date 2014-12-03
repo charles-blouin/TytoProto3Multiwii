@@ -46,7 +46,7 @@ void rxInt(void);
 void configureReceiver() {
   /******************    Configure each rc pin for PCINT    ***************************/
 
-  #if defined(STANDARD_RX)
+  #if defined(STANDARD_RX) || defined(RPM_SENSOR)
     #if defined(MEGA)
       DDRK = 0;  // defined PORTK as a digital port ([A8-A15] are consired as digital PINs and not analogical)
     #endif
@@ -147,6 +147,10 @@ void configureReceiver() {
       } else edgeTime[pin_pos] = cTime;                              \
     }
 #endif
+
+#endif
+
+#if defined(STANDARD_RX)  || defined(RPM_SENSOR)
 
   // port change Interrupt
   ISR(RX_PC_INTERRUPT) { //this ISR is common to every receiver channel, it is call everytime a change state occurs on a RX input pin

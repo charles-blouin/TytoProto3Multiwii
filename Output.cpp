@@ -1437,9 +1437,9 @@ void mixTable() {
     servo[6] += get_middle(6);
 
 	//For manual calibration of zero pitch.
-	servo[3] = constrain(rcData[AUX1],1020, 2000);
-    servo[4] = constrain(rcData[AUX2],1020, 2000);
-    servo[6] = constrain(rcData[AUX3],1020, 2000);
+	servo[3] = constrain(rcData[AUX1]+245,1020, 2000);
+    servo[4] = constrain(rcData[AUX2]+279,1020, 2000);
+    servo[6] = constrain(rcData[AUX3]+230,1020, 2000);
   #elif defined( GIMBAL )
     for(i=0;i<2;i++) {
       servo[i]  = ((int32_t)conf.servoConf[i].rate * att.angle[1-i]) /50L;

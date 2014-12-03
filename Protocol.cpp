@@ -254,7 +254,7 @@ void evaluateCommand() {
      break;
    case MSP_SET_RAW_RC:
      s_struct_w((uint8_t*)&rcSerial,16);
-     rcSerialCount = 50; // 1s transition 
+     rcSerialCount = 400; // 1s transition 
      break;
    #if GPS && !defined(I2C_GPS)
    case MSP_SET_RAW_GPS:

@@ -284,11 +284,13 @@
 
     /* if you want to preset min/middle/max values for servos right after flashing, because of limited physical
      * room for servo travel, then you must enable and set all three following options */
-	 //PROTO3 Specific: Servo 5: Tail motor, Servo 7: Main motor, 3, 4, 6 for swashplate.
+	 //PROTO3 Specific: Servo 5: Tail motor, Servo 7: Main motor, 3, 4, 6 for swashplate. 
      #define SERVO_MIN  {1020, 1020, 1020, 1100, 1100, 1020, 1100, 1020}
      #define  SERVO_MAX {2000, 2000, 2000, 1900, 1900, MAXTAILMOTOR, 1900, 2000}
-     #define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1250, 1500, 1500} // (*)
+     #define  SERVO_MID {1500, 1500, 1500, 1500, 1500, 1000, 1500, 1000} // (*)
      //#define FORCE_SERVO_RATES      {30,30,100,100,100,100,100,100} // 0 = normal, 1= reverse
+
+	 #define SERVO_DEFAULT  {1020, 1020, 1020, 1020, 1500, 1500, 1500, 1020} //When no RC signal. YAW = 2, THROTTLE = 3, AUX1,2,3 = 4,5,6	
 
   /***********************          Cam Stabilisation             ***********************/
     /* The following lines apply only for a pitch/roll tilt stabilization system. Uncomment the first or second line to activate it */

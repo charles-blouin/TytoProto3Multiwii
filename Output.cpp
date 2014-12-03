@@ -680,9 +680,7 @@ void initOutput() {
     while (1) {
       delay(5000);
       blinkLED(4,20, 2);
-    #if defined(BUZZER)
-      alarmArray[7] = 2;
-    #endif
+      SET_ALARM_BUZZER(ALRM_FAC_CONFIRM, ALRM_LVL_CONFIRM_2);
     }
     exit; // statement never reached
   #endif
@@ -1334,7 +1332,6 @@ void mixTable() {
    // Common controlls for Helicopters
     int16_t heliRoll,heliNick;
     int16_t collRange[3] = COLLECTIVE_RANGE;
-	//collRange[1] = map(rcData[AUX3],1000,2000,-250,250); debug[0] = collRange[1]; //Manually adjust zero pitch.
     static int16_t   collective;
     #ifdef GOVERNOR_P
       static int16_t last_collective = 0, delta_collective = 0, governorThrottle = 0;
@@ -1379,23 +1376,6 @@ void mixTable() {
       heliNick = axisPID[PITCH];
     }
 
-	//HELI SWASH PLATE PHASE TUNING. Use PASSTHROUGH mode. Tune until a ROLL cyclic does not result into a PITCH moment, and vice versa.
-	//int16_t MAPPED = map(rcData[AUX3],1000,2000,-500,500); debug[0]=MAPPED; //176
-	//#define PHASE MAPPED*0.1 //Swashplate phase shift in degrees. IMPORTANT TO TUNE BEFORE TUNING PID!!! 
-    //#define PHASE 17.6
-    //float cos_phase = cos(PHASE*3.1415/180.0);
-	//float sin_phase = sin(PHASE*3.1415/180.0);
-    #define cos_phase 0.95319067
-    #define sin_phase 0.30236989
-    #define COS_PHASE cos_phase //HARDCODED FOR RUNNING SPEED
-    #define SIN_PHASE sin_phase
-
-	//Swashplate phase rotation
-	float ROLL = heliRoll*COS_PHASE + heliNick*SIN_PHASE;
-	float NICK = -heliRoll*SIN_PHASE + heliNick*COS_PHASE;
-	heliRoll = ROLL;
-	heliNick = NICK;
-
     // Limit Maximum Rates for Heli
     int16_t cRange[2] = CONTROL_RANGE;
     heliRoll*= cRange[0]*0.01;
@@ -1404,47 +1384,35 @@ void mixTable() {
     /* Throttle & YAW
     ******************** */
     // Yaw control is common for Heli 90 & 120
-    servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + TAIL_MIN_ARMED;
-	servo[5] = 1020;
+    //servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].middle;
+    // tail precomp from collective
+    //int16_t acmd = abs(collective) - conf.yawCollPrecompDeadband; // abs collective minus deadband
+    //if (acmd > 0 ){
+    //  servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].middle + (acmd * conf.yawCollPrecomp)/10;
+    //} else {
+      servo[5] = (axisPID[YAW] * SERVODIR(5,1)) + conf.servoConf[5].middle;
+	  servo[5] = constrain(rcData[YAW],1020, 2000);
+    //}
     #if YAWMOTOR
-	  static int start_sequence = 0;
       servo[5] = constrain(servo[5], conf.servoConf[5].min, conf.servoConf[5].max); // limit the values
-      if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {
-		  servo[5] = MINCOMMAND; // Kill YawMotor
-	  }else{
-		  if(f.ARMED) servo[5] = max(TAIL_MIN_ARMED,servo[5]); //Special code to ensure the tailmotor is activated at all times when armed.
-	  } 
-
-	  if(f.ARMED){
-		if(start_sequence<150){
-			start_sequence++; //Apply more power for motor startup.
-			servo[5] = TAIL_MIN_ARMED + 200;
-		}
-	  }else{
-	    start_sequence = 0;
-	  }
-
-	  //servo[5] = conf.servoConf[5].min; //Temporarily disable the tail motor
+      if (rcCommand[THROTTLE]<conf.minthrottle || !f.ARMED) {servo[5] = MINCOMMAND;} // Kill YawMotor
     #endif
     if (!f.ARMED){
       servo[7] = MINCOMMAND;          // Kill throttle when disarmed
+	  servo[7] = constrain(rcData[THROTTLE],1020, 2000); //   MANUAL CONTROL!!!
     } else {
-      servo[7] = rcCommand[THROTTLE]; //   50hz ESC or servo
+      servo[7] = constrain(rcData[THROTTLE],1020, 2000); //   50hz ESC or servo
       #ifdef GOVERNOR_P
         servo[7] += governorThrottle;
       #endif
       servo[7] = constrain(servo[7], conf.minthrottle, MAXTHROTTLE);   //  limit min & max    }
-	  servo[7] = 1275;
-	  #ifdef VBAT
-			if(alarmArray[6] >= 2) servo[7] = conf.minthrottle; //Battery low. Forced landing.
-	  #endif
     }
     #ifndef HELI_USE_SERVO_FOR_THROTTLE
       motor[0] = servo[7];     // use real motor output - ESC capable
       #if YAWMOTOR
         motor[1] = servo[5];   // use motor2 output for YAWMOTOR
       #endif
-    #endif	
+    #endif
 
     //              ( Collective, Pitch/Nick, Roll ) Change sign to invert
     /************************************************************************************************************/
@@ -1458,7 +1426,6 @@ void mixTable() {
       servo[4]  =  HeliXPIDMIX( ( SERVODIR(4,4) * leftMix[0]), SERVODIR(4,2) * leftMix[1], SERVODIR(4,1) * leftMix[2]);   //    LEFT  servo
       servo[6]  =  HeliXPIDMIX( ( SERVODIR(6,4) * rightMix[0]),SERVODIR(6,2) * rightMix[1],SERVODIR(6,1) * rightMix[2]);  //    RIGHT servo
     #endif
-
     /************************************************************************************************************/
     #ifdef HELI_90_DEG
       servo[3]  = HeliXPIDMIX( +0, (conf.servoConf[3].rate/10), -0);      //     NICK  servo
@@ -1468,6 +1435,11 @@ void mixTable() {
     servo[3] += get_middle(3);
     servo[4] += get_middle(4);
     servo[6] += get_middle(6);
+
+	//For manual calibration of zero pitch.
+	servo[3] = constrain(rcData[AUX1],1020, 2000);
+    servo[4] = constrain(rcData[AUX2],1020, 2000);
+    servo[6] = constrain(rcData[AUX3],1020, 2000);
   #elif defined( GIMBAL )
     for(i=0;i<2;i++) {
       servo[i]  = ((int32_t)conf.servoConf[i].rate * att.angle[1-i]) /50L;
@@ -1559,12 +1531,30 @@ void mixTable() {
   /****************                compensate the Motors values                ******************/
   #ifdef VOLTAGEDROP_COMPENSATION
     {
-      #if (VBATNOMINAL == 126)
-        #define GOV_R_NUM 36
-        static int8_t g[] = { 0,3,5,8,11,14,17,19,22,25,28,31,34,38,41,44,47,51,54,58,61,65,68,72,76,79,83,87,91,95,99,104,108,112,117,121,126 };
-      #elif (VBATNOMINAL == 84)
+      #if (VBATNOMINAL == 84) // 2S
         #define GOV_R_NUM 24
         static int8_t g[] = { 0,4,8,12,17,21,25,30,34,39,44,49,54,59,65,70,76,81,87,93,99,106,112,119,126 };
+      #elif (VBATNOMINAL == 126) // 3S
+        #define GOV_R_NUM 36
+        static int8_t g[] = { 0,3,5,8,11,14,17,19,22,25,28,31,34,38,41,44,47,51,54,58,61,65,68,72,76,79,83,87,91,95,99,104,108,112,117,121,126 };
+      #elif (VBATNOMINAL == 252) // 6S
+        #define GOV_R_NUM 72
+        static int8_t g[] = { 0,1,3,4,5,7,8,9,11,12,14,15,17,18,19,21,22,24,25,27,28,30,31,33,34,36,38,39,41,
+            42,44,46,47,49,51,52,54,56,58,59,61,63,65,66,68,70,72,74,76,78,79,81,83,85,87,89,91,93,95,97,99,
+            101,104,106,108,110,112,114,117,119,121,123,126        };
+      #elif (VBATNOMINAL == 255) // 6S HV
+        #define GOV_R_NUM 73
+        static int8_t g[] = { 0,1,3,4,5,7,8,9,11,12,14,15,16,18,19,21,22,24,25,26,28,29,31,33,34,36,37,39,40,
+             42,44,45,47,48,50,52,53,55,57,59,60,62,64,66,67,69,71,73,75,76,78,80,82,84,86,88,90,92,94,96,98,
+             100,102,104,106,108,111,113,115,117,119,122,124,126        };
+      #elif (VBATNOMINAL == 129) // 3S HV
+        #define GOV_R_NUM 37
+        static int8_t g[] = { 0,3,5,8,11,13,16,19,22,25,28,31,34,37,40,43,46,49,53,56,59,63,66,70,74,77,81,85,
+             89,93,96,101,105,109,113,117,122,126         };
+      #elif (VBATNOMINAL == 168) // 4S
+        #define GOV_R_NUM 48
+        static int8_t g[] = { 0,2,4,6,8,10,12,14,17,19,21,23,25,28,30,32,34,37,39,42,44,47,49,52,54,57,59,62,
+             65,67,70,73,76,78,81,84,87,90,93,96,99,103,106,109,112,116,119,122,126    };
       #else
         #error "VOLTAGEDROP_COMPENSATION requires correction values which fit VBATNOMINAL; not yet defined for your value of VBATNOMINAL"
       #endif

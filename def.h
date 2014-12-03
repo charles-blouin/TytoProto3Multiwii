@@ -1746,7 +1746,7 @@
 //all new Special RX's must be added here
 //this is to avoid confusion :)
 #if !defined(SERIAL_SUM_PPM) && !defined(SPEKTRUM) && !defined(SBUS)
-  #define STANDARD_RX
+  //#define STANDARD_RX
 #endif
 
 // Spektrum Satellite

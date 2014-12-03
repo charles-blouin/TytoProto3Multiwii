@@ -21,7 +21,7 @@
 #elif defined(SPEKTRUM) || defined(SERIAL_SUM_PPM)
   volatile uint16_t rcValue[RC_CHANS] = {1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502}; // interval [1000;2000]
 #else
-  volatile uint16_t rcValue[RC_CHANS] = {1502, 1502, 1502, 1502, 1502, 1502, 1502, 1502}; // interval [1000;2000]
+  volatile uint16_t rcValue[RC_CHANS] = SERVO_DEFAULT; // interval [1000;2000]
 #endif
 
 #if defined(SERIAL_SUM_PPM) //Channel order for PPM SUM RX Configs
@@ -436,7 +436,8 @@ uint16_t readRawRC(uint8_t chan) {
   #else
     uint8_t oldSREG;
     oldSREG = SREG; cli(); // Let's disable interrupts
-    data = rcValue[rcChannel[chan]]; // Let's copy the data Atomically
+    //data = rcValue[rcChannel[chan]]; // Let's copy the data Atomically
+	data = rcValue[chan]; // Let's copy the data Atomically
     SREG = oldSREG;        // Let's restore interrupt state
   #endif
   return data; // We return the value correctly copied when the IRQ's where disabled
@@ -458,21 +459,22 @@ void computeRC() {
     if (rc4ValuesIndex == AVERAGING_ARRAY_LENGTH-1) rc4ValuesIndex = 0;
     for (chan = 0; chan < RC_CHANS; chan++) {
       rcDataTmp = readRawRC(chan);
-      #if defined(FAILSAFE)
-        failsafeGoodCondition = rcDataTmp>FAILSAFE_DETECT_TRESHOLD || chan > 3 || !f.ARMED; // update controls channel only if pulse is above FAILSAFE_DETECT_TRESHOLD
-      #endif                                                                                // In disarmed state allow always update for easer configuration.
-      #if defined(SPEKTRUM) || defined(SBUS) // no averaging for Spektrum & SBUS signal
-        if(failsafeGoodCondition)  rcData[chan] = rcDataTmp;
-      #else
-        if(failsafeGoodCondition) {
-          rcDataMean = rcDataTmp;
-          for (a=0;a<AVERAGING_ARRAY_LENGTH-1;a++) rcDataMean += rcData4Values[chan][a];
-          rcDataMean = (rcDataMean+(AVERAGING_ARRAY_LENGTH/2))/AVERAGING_ARRAY_LENGTH;
-          if ( rcDataMean < (uint16_t)rcData[chan] -3)  rcData[chan] = rcDataMean+2;
-          if ( rcDataMean > (uint16_t)rcData[chan] +3)  rcData[chan] = rcDataMean-2;
-          rcData4Values[chan][rc4ValuesIndex] = rcDataTmp;
-        }
-      #endif
+      //#if defined(FAILSAFE)
+      //  failsafeGoodCondition = rcDataTmp>FAILSAFE_DETECT_TRESHOLD || chan > 3 || !f.ARMED; // update controls channel only if pulse is above FAILSAFE_DETECT_TRESHOLD
+      //#endif                                                                                // In disarmed state allow always update for easer configuration.
+      //#if defined(SPEKTRUM) || defined(SBUS) // no averaging for Spektrum & SBUS signal
+        //if(failsafeGoodCondition)  rcData[chan] = rcDataTmp;
+      //#else
+      //  if(failsafeGoodCondition) {
+      //    rcDataMean = rcDataTmp;
+      //    for (a=0;a<AVERAGING_ARRAY_LENGTH-1;a++) rcDataMean += rcData4Values[chan][a];
+      //    rcDataMean = (rcDataMean+(AVERAGING_ARRAY_LENGTH/2))/AVERAGING_ARRAY_LENGTH;
+      //    if ( rcDataMean < (uint16_t)rcData[chan] -3)  rcData[chan] = rcDataMean+2;
+      //    if ( rcDataMean > (uint16_t)rcData[chan] +3)  rcData[chan] = rcDataMean-2;
+      //    rcData4Values[chan][rc4ValuesIndex] = rcDataTmp;
+      //  }
+      //#endif
+	  rcData[chan] = rcDataTmp;
       if (chan<8 && rcSerialCount > 0) { // rcData comes from MSP and overrides RX Data until rcSerialCount reaches 0
         rcSerialCount --;
         #if defined(FAILSAFE)

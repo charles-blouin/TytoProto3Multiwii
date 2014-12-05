@@ -420,7 +420,9 @@ int16_t get_digital_temp(int sensor){
 		  LowByte = data[0];
 		  HighByte = data[1];
 		  TReading = (HighByte << 8) + LowByte;
-		  last_valid_temp[current_sensor] = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+		  int16_t temp = (6 * TReading) + TReading / 4;    // multiply by (100 * 0.0625) or 6.25
+		  if(temp <=12500 && temp >=-5500)
+			last_valid_temp[current_sensor] = temp;
 
 		  if(adress_motor[0]==0){ //Motor temp sensor not found yet
 			loop_state = 0;

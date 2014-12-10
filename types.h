@@ -85,8 +85,10 @@ enum box {
 #ifdef TEST_JIG_TRUST
 typedef struct {
   int16_t  MainMotor_rpm;
+#ifdef MAIN_MOTOR_TEMP
   int16_t  MainMotor_temp;
   int16_t  Room_temp;
+#endif
 } main_motor_data_t;
 #endif
 

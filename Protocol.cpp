@@ -24,6 +24,10 @@
 #define MSP_TEST_JIG_DATA        99   //out message          main motor torque/temp etc...
 #endif
 
+#ifdef PX4FLOW
+#define MSP_PX4FLOW_INTEGRAL    51   //out message          main motor torque/temp etc...
+#endif
+
 #define MSP_IDENT                100   //out message         multitype + multiwii version + protocol version + capability variable
 #define MSP_STATUS               101   //out message         cycletime & errors_count & sensor present & box activation & current setting number
 #define MSP_RAW_IMU              102   //out message         9 DOF
@@ -382,6 +386,13 @@ void evaluateCommand() {
      s_struct((uint8_t*)&main_motor_data,sizeof(main_motor_data));
      break;
 #endif
+#ifdef MSP_PX4FLOW_INTEGRAL
+   case MSP_PX4FLOW_INTEGRAL:
+     s_struct((uint8_t*)&i2c_integral_frame,sizeof(i2c_integral_frame));
+	 debug[0] = 3;
+     break;
+#endif
+
    case MSP_STATUS:
      struct {
        uint16_t cycleTime,i2c_errors_count,sensor;

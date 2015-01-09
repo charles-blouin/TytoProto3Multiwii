@@ -21,6 +21,9 @@ void computeIMU () {
   #if GYRO
     Gyro_getADC();
   #endif
+#if FLOW
+	FLOW_getADC();
+#endif
 	//for (axis = 0; axis < 3; axis++){
 	//	gyroADCinter[axis] =  imu.gyroADC[axis];
 	//}

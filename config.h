@@ -31,7 +31,7 @@
 /*****************                                                                 ***************/
 /*************************************************************************************************/
 
-#define TEST_JIG_TRUST //In trust test jig mode
+//#define TEST_JIG_TRUST //In trust test jig mode
 
   /**************************    The type of multicopter    ****************************/
     //#define GIMBAL

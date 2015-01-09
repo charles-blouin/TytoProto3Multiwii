@@ -44,6 +44,10 @@ extern int16_t  sonarAlt;
 extern int16_t  BaroPID;
 extern int16_t  errorAltitudeI;
 
+
+
+
+
 extern int16_t  i2c_errors_count;
 extern uint8_t alarmArray[16];
 extern global_conf_t global_conf;
@@ -54,6 +58,10 @@ extern alt_t alt;
 extern att_t att;
 #ifdef LOG_PERMANENT
 extern plog_t plog;
+#endif
+
+#ifdef PX4FLOW
+	extern i2c_integral_frame_t i2c_integral_frame;
 #endif
 
 #ifdef TEST_JIG_TRUST

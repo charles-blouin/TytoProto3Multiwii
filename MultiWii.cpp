@@ -183,6 +183,8 @@ alt_t alt;
 
 att_t att;
 
+i2c_integral_frame_t i2c_integral_frame;
+
 #if defined(ARMEDTIMEWARNING)
 uint32_t  ArmedTimeWarningMicroSeconds = 0;
 #endif

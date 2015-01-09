@@ -10,3 +10,10 @@
 *.xml
 *.xml
 *.xml
+TytoProto3Multiwii.opensdf
+TytoProto3Multiwii.sdf
+TytoProto3Multiwii.suo
+Visual Micro/.TytoProto3Multiwii.vsarduino.h
+Visual Micro/Compile.vmps.xml
+Visual Micro/Configuration.Debug.vmps.xml
+Visual Micro/Upload.vmps.xml
